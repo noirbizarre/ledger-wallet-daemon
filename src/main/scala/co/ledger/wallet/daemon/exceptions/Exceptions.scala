@@ -82,6 +82,10 @@ case class DaemonDatabaseException(msg: String, t: Throwable) extends DaemonExce
   def code: Int = ErrorCodes.DAEMON_DATABASE_EXCEPTION
 }
 
+case class CoreDatabaseException(msg: String, t: Throwable) extends DaemonException(msg, t) {
+  def code: Int = ErrorCodes.CORE_DATABASE_EXCEPTION
+}
+
 case class AccountSyncException(poolName: String, walletName: String, accountIndex: Int, t: Throwable) extends {
   val msg = s"Synchronization of Account $poolName:$walletName:$accountIndex failed"
   val code = ErrorCodes.ACCOUNT_SYNC_FAILED
@@ -121,4 +125,5 @@ object ErrorCodes {
   val CORE_BAD_REQUEST = 301
   val DAEMON_DATABASE_EXCEPTION = 302
   val PROVIDER_BALANCE_EXCEPTION = 303
+  val CORE_DATABASE_EXCEPTION = 304
 }

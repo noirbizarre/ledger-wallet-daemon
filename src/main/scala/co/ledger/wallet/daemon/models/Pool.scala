@@ -7,7 +7,7 @@ import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.gl
 import co.ledger.wallet.daemon.clients.ClientFactory
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
 import co.ledger.wallet.daemon.database.PoolDto
-import co.ledger.wallet.daemon.exceptions.{CurrencyNotFoundException, WalletNotFoundException}
+import co.ledger.wallet.daemon.exceptions.{CoreDatabaseException, CurrencyNotFoundException, WalletNotFoundException}
 import co.ledger.wallet.daemon.libledger_core.async.LedgerCoreExecutionContext
 import co.ledger.wallet.daemon.libledger_core.crypto.SecureRandomRNG
 import co.ledger.wallet.daemon.libledger_core.debug.NoOpLogPrinter
@@ -18,11 +18,13 @@ import co.ledger.wallet.daemon.services.LogMsgMaker
 import co.ledger.wallet.daemon.utils.{HexUtils, Utils}
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.twitter.inject.Logging
+import com.typesafe.config.ConfigFactory
 import org.bitcoinj.core.Sha256Hash
 
 import scala.collection.JavaConverters._
 import scala.collection._
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
   private[this] val self = this
@@ -267,14 +269,40 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
 }
 
 object Pool {
+  private val config = ConfigFactory.load()
+
   def newInstance(coreP: core.WalletPool, id: Long): Pool = {
     new Pool(coreP, id)
   }
 
   def newCoreInstance(poolDto: PoolDto): Future[core.WalletPool] = {
     val poolConfig = core.DynamicObject.newInstance()
-    //    poolConfig.putString("BLOCKCHAIN_OBSERVER_WS_ENDPOINT", "ws://notification.explorers.dev.aws.ledger.fr:9000/ws/{}")
-    //    poolConfig.putString("BLOCKCHAIN_OBSERVER_ENGINE", "LEDGER_API")
+    val dbBackend = Try(config.getString("core_database_engine")).toOption.getOrElse("sqlite3") match {
+      case "postgres" =>
+        val dbName = for {
+          dbPort <- Try(config.getString("postgres.port"))
+          dbHost <- Try(config.getString("postgres.host"))
+          dbUserName <- Try(config.getString("postgres.username"))
+          dbPwd <- Try(config.getString("postgres.password"))
+          dbPrefix <- Try(config.getString("postgres.db_name_prefix"))
+        } yield {
+          // Ref: postgres://USERNAME:PASSWORD@HOST:PORT/DBNAME
+          if (dbPwd.isEmpty) {
+            s"postgres://${dbUserName}:${dbPwd}@${dbHost}:${dbPort}/${dbPrefix}${poolDto.name}"
+          } else {
+            s"postgres://${dbUserName}@${dbHost}:${dbPort}/${dbPrefix}${poolDto.name}"
+          }
+        }
+        dbName match {
+          case Success(value) =>
+            poolConfig.putString("DATABASE_NAME", value)
+            core.DatabaseBackend.getPostgreSQLBackend(config.getInt("postgres.pool_size"))
+          case Failure(exception) =>
+            throw CoreDatabaseException("Failed to configure wallet daemon's core database", exception)
+        }
+      case _ => core.DatabaseBackend.getSqlite3Backend
+    }
+
     core.WalletPoolBuilder.createInstance()
       .setHttpClient(ClientFactory.httpClient)
       .setWebsocketClient(ClientFactory.webSocketClient)
@@ -282,7 +310,7 @@ object Pool {
       .setThreadDispatcher(ClientFactory.threadDispatcher)
       .setPathResolver(new ScalaPathResolver(corePoolId(poolDto.userId, poolDto.name)))
       .setRandomNumberGenerator(new SecureRandomRNG)
-      .setDatabaseBackend(core.DatabaseBackend.getSqlite3Backend)
+      .setDatabaseBackend(dbBackend)
       .setConfiguration(poolConfig)
       .setName(poolDto.name)
       .build()

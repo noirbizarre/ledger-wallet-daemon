@@ -74,3 +74,34 @@ When a new version of the libcore is available, we need to update our bindings.
 
 7. Add a tag on the new commit with the version of the ledger-core-lib, or the commit
    hash if no version was tagged
+
+## Using Wallet Daemon with PostgreSQL
+
+### Setup
+
+1. Make sure to have a PostgreSQL server running,
+
+2. For integration tests make sure to create required databases, you could use the `db.sh` for that:
+
+    ```
+    ./dbs.sh <host> <port>
+    ```
+    To drop databases simply run: 
+    ```
+    ./dbs.sh <host> <port> drop
+    ```
+
+3. For tests with users' databases (i.e. `database.db` created), please use, in an analogous way, `client_dbs.sh` script.
+
+### Configuration
+
+
+1. By default, Wallet Daemon is using Sqlite3 by default, to activate PostgreSQL set: 
+    ```
+    CORE_DATABASE_ENGINE=postgres
+    ``` 
+2. Setting the PostgreSQL URL connection is done through: `PG_URL`, by default set to `postgres://localhost:5432`,    
+3. It is possible to set the connection pool size per wallet pool (e.g. by client) thanks to: 
+`PG_CONNECTION_POOL_SIZE_PER_WALLET_POOL`, which is equal to `2` by default. 
+
+

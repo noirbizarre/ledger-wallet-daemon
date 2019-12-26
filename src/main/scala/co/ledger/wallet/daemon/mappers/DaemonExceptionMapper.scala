@@ -100,6 +100,8 @@ class DaemonExceptionMapper @Inject()(response: ResponseBuilder)
           daemonExceptionInfo(e),
           response
         )
+      case e: CoreDatabaseException =>
+        ResponseSerializer.serializeInternalError(request, response, e)
       case e: FallbackBalanceProviderException =>
         ResponseSerializer.serializeInternalError(request, response, e)
     }

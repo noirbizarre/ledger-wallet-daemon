@@ -60,6 +60,8 @@ object Utils {
     */
   def intervalSize(startInclusive: LocalDate, endInclusive: LocalDate, period: core.TimePeriod): Int = {
     period match {
+      // FIXME: Check if this is really what we want for hourly intervals
+      case TimePeriod.HOUR => ChronoUnit.HOURS.between(startInclusive, endInclusive).intValue()
       case TimePeriod.DAY => ChronoUnit.DAYS.between(startInclusive, endInclusive.plusDays(1)).intValue()
       case TimePeriod.WEEK =>
         ChronoUnit.WEEKS.between(

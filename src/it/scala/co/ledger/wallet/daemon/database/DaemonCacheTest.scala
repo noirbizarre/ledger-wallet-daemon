@@ -33,7 +33,7 @@ class DaemonCacheTest extends AssertionsForJUnit {
 
   @Test def verifyGetPoolsWithNotExistUser(): Unit = {
     try {
-      Await.result(cache.getWalletPools(UUID.randomUUID().toString), Duration.Inf)
+      Await.result(cache.getWalletPools("random"), Duration.Inf)
       fail()
     } catch {
       case _: UserNotFoundException => // expected
@@ -52,7 +52,7 @@ class DaemonCacheTest extends AssertionsForJUnit {
   }
 
   @Test def verifyCreateAndDeletePool(): Unit = {
-    val poolRandom = Await.result(cache.createWalletPool(PoolInfo(UUID.randomUUID().toString, new User(2L, PUB_KEY_2).pubKey), "config"), Duration.Inf)
+    val poolRandom = Await.result(cache.createWalletPool(PoolInfo("random", new User(2L, PUB_KEY_2).pubKey), "config"), Duration.Inf)
     val beforeDeletion = Await.result(cache.getWalletPools(PUB_KEY_2), Duration.Inf)
     assertEquals(3, beforeDeletion.size)
     assertTrue(beforeDeletion.contains(poolRandom))
@@ -144,6 +144,6 @@ object DaemonCacheTest {
   private val PUB_KEY_1 = UUID.randomUUID().toString
   private val PUB_KEY_2 = UUID.randomUUID().toString
   private val PUB_KEY_3 = UUID.randomUUID().toString
-  private val WALLET_NAME = UUID.randomUUID().toString
-  private val POOL_NAME = UUID.randomUUID().toString
+  private val WALLET_NAME = "WALLET_NAME"
+  private val POOL_NAME = "POOL_NAME"
 }

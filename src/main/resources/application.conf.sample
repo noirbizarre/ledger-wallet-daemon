@@ -1,10 +1,27 @@
 database_engine = "sqlite3"
+core_database_engine = "sqlite3"
+core_database_engine = ${?CORE_DATABASE_ENGINE}
 
 sqlite3 = {
   url = "jdbc:sqlite:database.db"
   url = ${?WALLET_JDBC_URL}
   driver = "org.sqlite.JDBC"
   connectionPool = disabled
+}
+
+postgres = {
+    host = "localhost"
+    host = ${?CORE_PG_HOST}
+    port = "5432"
+    port = ${?CORE_PG_PORT}
+    username = "postgres"
+    username = ${?CORE_PG_USER}
+    password = ""
+    password = ${?CORE_PG_PWD}
+    db_name_prefix = ""
+    db_name_prefix = ${?CORE_PG_DB_NAME_PREFIX}
+    pool_size = 30
+    pool_size = ${?CORE_PG_CONNECTION_POOL_SIZE_PER_WALLET_POOL}
 }
 
 proxy = {

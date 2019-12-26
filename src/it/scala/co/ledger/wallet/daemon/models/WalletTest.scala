@@ -1,6 +1,5 @@
 package co.ledger.wallet.daemon.models
 
-import java.util.UUID
 
 import co.ledger.core
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.global
@@ -25,7 +24,7 @@ class WalletTest extends AssertionsForJUnit {
     "d1bb833ecd3beed6ec5f6aa79d3a424d53f5b99147b21dbc00456b05bc978a71",
     "88c2281acd51737c912af74cc1d1a8ba564eb7925e0d58a5500b004ba76099cb")
 
-  private val testPool = Pool.newInstance(Await.result(Pool.newCoreInstance(new PoolDto(UUID.randomUUID().toString, 2L, "", Option(0L))), Duration.Inf), 1L)
+  private val testPool = Pool.newInstance(Await.result(Pool.newCoreInstance(new PoolDto("random", 2L, "", Option(0L))), Duration.Inf), 1L)
 
   private val testWallet = Await.result(testPool.addWalletIfNotExist("test_wallet", "bitcoin"), Duration.Inf)
 
