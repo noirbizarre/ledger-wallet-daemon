@@ -56,12 +56,12 @@ object Utils {
   /**
     * Calculate how many values are expected regarding date interval and period
     * Note that our API is proposing inclusive bound ranges whereas java is proposing exclusive end bounds
+    *
     * @return How many partial or complete DAYs / WEEKs / MONTHs are involved inside the inclusive [start ; end] interval
     */
   def intervalSize(startInclusive: LocalDate, endInclusive: LocalDate, period: core.TimePeriod): Int = {
     period match {
-      // FIXME: Check if this is really what we want for hourly intervals
-      case TimePeriod.HOUR => ChronoUnit.HOURS.between(startInclusive, endInclusive).intValue()
+      case TimePeriod.HOUR => ChronoUnit.HOURS.between(startInclusive, endInclusive.plus(1, ChronoUnit.HOURS)).intValue()
       case TimePeriod.DAY => ChronoUnit.DAYS.between(startInclusive, endInclusive.plusDays(1)).intValue()
       case TimePeriod.WEEK =>
         ChronoUnit.WEEKS.between(
