@@ -1,7 +1,7 @@
 package co.ledger.wallet.daemon.filters
 
 import java.nio.charset.StandardCharsets
-import java.util.Base64
+import java.util.{Base64, Date}
 
 import co.ledger.wallet.daemon.services.AuthenticationService.{AuthContext, AuthContextContext}
 import co.ledger.wallet.daemon.utils.HexUtils
@@ -23,4 +23,12 @@ class LWDAutenticationFilter extends SimpleFilter[Request, Response] {
     service(request)
   }
 
+}
+
+class HackLWDAutenticationFilter extends SimpleFilter[Request, Response] {
+   override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
+        val pubKey = request.headerMap.get("pubKey").get
+        AuthContextContext.setContext(request, AuthContext(HexUtils.valueOf(pubKey), new Date().getTime, HexUtils.valueOf("1234")))
+        service(request)
+   }
 }

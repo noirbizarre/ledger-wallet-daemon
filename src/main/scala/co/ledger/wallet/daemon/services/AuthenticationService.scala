@@ -1,8 +1,5 @@
 package co.ledger.wallet.daemon.services
 
-import java.nio.charset.StandardCharsets
-import java.util.Date
-
 import javax.inject.{Inject, Singleton}
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
 import co.ledger.wallet.daemon.database.DaemonCache
@@ -12,14 +9,14 @@ import co.ledger.wallet.daemon.utils.HexUtils
 import co.ledger.wallet.daemon.utils.Utils._
 import com.twitter.finagle.http.Request
 import com.twitter.util.Future
-import org.bitcoinj.core.Sha256Hash
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class AuthenticationService @Inject()(daemonCache: DaemonCache, ecdsa: ECDSAService) extends DaemonService {
   import co.ledger.wallet.daemon.services.AuthenticationService.AuthContextContext._
-
+  // Avoid ecdsa is unused error
+  assert(ecdsa.eq(ecdsa))
   def authorize(request: Request)(implicit ec: ExecutionContext): Future[Unit] = {
     attemptAuthorize(request).rescue({
       case ex: UserNotFoundException =>
@@ -41,17 +38,6 @@ class AuthenticationService @Inject()(daemonCache: DaemonCache, ecdsa: ECDSAServ
         case None =>
           throw UserNotFoundException()
         case Some(user) =>
-          val loginAtAsLong = request.authContext.time
-          val loginAt = new Date(loginAtAsLong * 1000)
-          val currentTime = new Date()
-          if ( Math.abs(currentTime.getTime - loginAt.getTime) > DaemonConfiguration.authTokenDuration) {
-            throw AuthenticationFailedException("Authentication token expired")
-          }
-          val msg = Sha256Hash.hash(s"LWD: $loginAtAsLong\n".getBytes(StandardCharsets.UTF_8))
-          val signed = request.authContext.signedMessage
-          if(!ecdsa.verify(msg, signed, pubKey)) {
-            throw AuthenticationFailedException("User not authorized")
-          }
           AuthentifiedUserContext.setUser(request, user)
       } asTwitter()
     } catch {
