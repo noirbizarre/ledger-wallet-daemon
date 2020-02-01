@@ -1,0 +1,44 @@
+version: '2.4'
+
+services:
+  postgres-server:
+    image: postgres:${POSTGRES_VERSION:-11.1}
+    environment:
+      DATABASE_NAME: core_data
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ledger_secret
+    healthcheck:
+      test: "pg_isready -h localhost -p 5432 -U ledger"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    ports:
+      - "5432:5432"
+  wallet-daemon:
+    image: ledgerhq/ledger-wallet-daemon:alpha-pg-1
+    environment:
+      DATABASE_NAME: core_data
+      CORE_DATABASE_ENGINE: postgres
+      CORE_PG_USER: ledger
+      CORE_PG_PWD: ledger_secret
+      CORE_PG_HOST: localhost
+      CORE_PG_PORT: 5432
+      CORE_PG_DB_NAME_PREFIX: wallet_daemon_
+    entrypoint:
+      bash -xc "
+        apt-get update && apt-get install -y postgresql;
+        pg_isready -h postgres-server -p 5432 -U ledger;
+        PGPASSWORD=$$CORE_PG_PWD psql -d $$CORE_PG_USER -U $$CORE_PG_USER -c \"CREATE DATABASE $$DATABASE_NAME\" -h postgres-server -p 5432;
+        ./run.sh;
+      "
+    healthcheck:
+      test: "command -v curl || ( apt update && apt install -y curl ) && curl -fsS http://wallet-daemon:9200/_health"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 1m
+    ports:
+      - "9200:9200"
+    depends_on:
+      - postgres-server
