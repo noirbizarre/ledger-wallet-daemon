@@ -64,7 +64,7 @@ class DefaultDaemonCache() extends DaemonCache with Logging {
   }
 
   def getPreviousBatchAccountOperations(previous: UUID,
-                                         fullOp: Int, accountInfo: AccountInfo): Future[PackedOperationsView] = {
+                                        fullOp: Int, accountInfo: AccountInfo): Future[PackedOperationsView] = {
     withAccountAndWallet(accountInfo) {
       case (account, wallet) =>
         val previousRecord = opsCache.getPreviousOperationRecord(previous)
@@ -75,8 +75,8 @@ class DefaultDaemonCache() extends DaemonCache with Logging {
     }
   }
 
-  def getNextBatchAccountOperations( next: UUID,
-                                     fullOp: Int, accountInfo: AccountInfo): Future[PackedOperationsView] = {
+  def getNextBatchAccountOperations(next: UUID,
+                                    fullOp: Int, accountInfo: AccountInfo): Future[PackedOperationsView] = {
     withAccountAndWalletAndPool(accountInfo) {
       case (account, wallet, pool) =>
         val candidate = opsCache.getOperationCandidate(next)
@@ -161,10 +161,11 @@ object DefaultDaemonCache extends Logging {
           info(LogMsgMaker.newInstance("Pool created").append("name", name).append("user_id", id).toString())
           pool
         }
-      }.recover {
+      }.recoverWith {
         case _: WalletPoolAlreadyExistException =>
           warn(LogMsgMaker.newInstance("Pool already exist").append("name", name).append("user_id", id).toString())
-          cachedPools(name)
+          pool(name).map(op => op.getOrElse(throw WalletPoolNotFoundException(s"Failed to retrieve pool, inconsistent state for pool $name")))
+
       }
     }
 
