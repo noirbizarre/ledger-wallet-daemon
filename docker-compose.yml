@@ -22,18 +22,20 @@ services:
       CORE_DATABASE_ENGINE: postgres
       CORE_PG_USER: ledger
       CORE_PG_PWD: ledger_secret
-      CORE_PG_HOST: localhost
+      CORE_PG_HOST: postgres-server
       CORE_PG_PORT: 5432
       CORE_PG_DB_NAME_PREFIX: wallet_daemon_
     entrypoint:
       bash -xc "
         apt-get update && apt-get install -y postgresql;
+        apt-get update && apt-get install -y curl
         pg_isready -h postgres-server -p 5432 -U ledger;
-        PGPASSWORD=$$CORE_PG_PWD psql -d $$CORE_PG_USER -U $$CORE_PG_USER -c \"CREATE DATABASE $$DATABASE_NAME\" -h postgres-server -p 5432;
+        PGPASSWORD=$$CORE_PG_PWD
+        psql -d $$CORE_PG_USER -U $$CORE_PG_USER -c \"CREATE DATABASE $$DATABASE_NAME\" -h postgres-server -p 5432 -W $$CORE_PG_PWD;
         ./run.sh;
       "
     healthcheck:
-      test: "command -v curl || ( apt update && apt install -y curl ) && curl -fsS http://wallet-daemon:9200/_health"
+      test: "command -v curl && curl -fsS http://wallet-daemon:9200/_health"
       interval: 5s
       timeout: 5s
       retries: 3
