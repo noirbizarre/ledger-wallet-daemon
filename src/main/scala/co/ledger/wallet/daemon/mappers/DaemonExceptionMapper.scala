@@ -81,9 +81,8 @@ class DaemonExceptionMapper @Inject()(response: ResponseBuilder)
           response
         )
       case e: DaemonDatabaseException =>
-        ResponseSerializer.serializeBadRequest(request,
-          daemonExceptionInfo(e),
-          response
+        ResponseSerializer.serializeInternalError(request,
+          response, e.t
         )
       case e: InvalidCurrencyForErc20Operation =>
         ResponseSerializer.serializeBadRequest(request,
