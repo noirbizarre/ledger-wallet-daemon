@@ -7,7 +7,7 @@ import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.gl
 import co.ledger.wallet.daemon.clients.ClientFactory
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
 import co.ledger.wallet.daemon.database.PoolDto
-import co.ledger.wallet.daemon.exceptions.{CurrencyNotFoundException, WalletNotFoundException}
+import co.ledger.wallet.daemon.exceptions.{CoreDatabaseException, CurrencyNotFoundException, WalletNotFoundException}
 import co.ledger.wallet.daemon.libledger_core.async.LedgerCoreExecutionContext
 import co.ledger.wallet.daemon.libledger_core.crypto.SecureRandomRNG
 import co.ledger.wallet.daemon.libledger_core.debug.NoOpLogPrinter
@@ -18,11 +18,13 @@ import co.ledger.wallet.daemon.services.LogMsgMaker
 import co.ledger.wallet.daemon.utils.{HexUtils, Utils}
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.twitter.inject.Logging
+import com.typesafe.config.ConfigFactory
 import org.bitcoinj.core.Sha256Hash
 
 import scala.collection.JavaConverters._
 import scala.collection._
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
   private[this] val self = this
@@ -261,6 +263,8 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
 }
 
 object Pool {
+  private val config = ConfigFactory.load()
+
   def newInstance(coreP: core.WalletPool, id: Long): Pool = {
     new Pool(coreP, id)
   }
@@ -300,7 +304,7 @@ object Pool {
       .setThreadDispatcher(ClientFactory.threadDispatcher)
       .setPathResolver(new ScalaPathResolver(corePoolId(poolDto.userId, poolDto.name)))
       .setRandomNumberGenerator(new SecureRandomRNG)
-      .setDatabaseBackend(core.DatabaseBackend.getSqlite3Backend)
+      .setDatabaseBackend(dbBackend)
       .setConfiguration(poolConfig)
       .setName(poolDto.name)
       .build()
