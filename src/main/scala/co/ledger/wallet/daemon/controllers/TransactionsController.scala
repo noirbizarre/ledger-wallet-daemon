@@ -1,6 +1,6 @@
 package co.ledger.wallet.daemon.controllers
 
-import co.ledger.core.RippleLikeMemo
+import co.ledger.core.{BitcoinLikePickingStrategy, RippleLikeMemo}
 import co.ledger.wallet.daemon.controllers.requests.{CommonMethodValidations, RequestWithUser}
 import co.ledger.wallet.daemon.models.{AccountInfo, FeeMethod}
 import co.ledger.wallet.daemon.services.TransactionsService
@@ -65,6 +65,7 @@ object TransactionsController {
                                             request: Request
                                            ) extends BroadcastTransactionRequest {
     def hexTx: Array[Byte] = HexUtils.valueOf(raw_transaction)
+
     def hexSig: Array[Byte] = HexUtils.valueOf(signatures.head)
 
     @MethodValidation
@@ -80,6 +81,7 @@ object TransactionsController {
                                             request: Request
                                            ) extends BroadcastTransactionRequest {
     def rawTx: Array[Byte] = HexUtils.valueOf(raw_transaction)
+
     def pairedSignatures: Seq[(Array[Byte], Array[Byte])] = signatures.zipWithIndex.map { case (sig, index) =>
       (HexUtils.valueOf(sig), HexUtils.valueOf(pubkeys(index)))
     }
@@ -99,6 +101,7 @@ object TransactionsController {
                                             request: Request
                                            ) extends BroadcastTransactionRequest {
     def hexTx: Array[Byte] = HexUtils.valueOf(raw_transaction)
+
     def hexSig: Array[Byte] = HexUtils.valueOf(signatures.head)
 
     @MethodValidation
@@ -115,7 +118,9 @@ object TransactionsController {
                                          contract: Option[String]
                                         ) extends CreateTransactionRequest {
     def amountValue: BigInt = BigInt(amount)
+
     def gasLimitValue: Option[BigInt] = gas_limit.map(BigInt(_))
+
     def gasPriceValue: Option[BigInt] = gas_price.map(BigInt(_))
 
     override def transactionInfo: TransactionInfo = ETHTransactionInfo(recipient, amountValue, gasLimitValue, gasPriceValue, contract)
@@ -125,13 +130,22 @@ object TransactionsController {
                                          fees_per_byte: Option[String],
                                          fees_level: Option[String],
                                          amount: String,
+                                         merge_utxo_strategy: Option[String],
+                                         merge_strategy_max_utxo: Option[Int],
                                          exclude_utxos: Option[Map[String, Int]],
                                          partialTx: Option[Boolean]
                                         ) extends CreateTransactionRequest {
     def amountValue: BigInt = BigInt(amount)
+
     def feesPerByteValue: Option[BigInt] = fees_per_byte.map(BigInt(_))
 
-    def transactionInfo: BTCTransactionInfo = BTCTransactionInfo(recipient, feesPerByteValue, fees_level, amountValue, exclude_utxos.getOrElse(Map[String, Int]()), partialTx)
+    def transactionInfo: BTCTransactionInfo = BTCTransactionInfo(
+      recipient, feesPerByteValue, fees_level, amountValue,
+      merge_utxo_strategy.map(BitcoinLikePickingStrategy.valueOf).getOrElse(BitcoinLikePickingStrategy.OPTIMIZE_SIZE),
+      merge_strategy_max_utxo.getOrElse(-1),
+      exclude_utxos.getOrElse(Map[String, Int]()),
+      partialTx
+    )
 
     @MethodValidation
     def validateFees: ValidationResult = CommonMethodValidations.validateFees(feesPerByteValue, fees_level)
@@ -142,23 +156,26 @@ object TransactionsController {
   case class XRPSendToRequest(amount: String, address: String)
 
   case class CreateXRPTransactionRequest(send_to: List[XRPSendToRequest], // Send funds to the given address.
-                                         wipe_to: Option[String],         // Send all available funds to the given address.
-                                         fees: Option[String],            // Fees (in drop) the originator is willing to pay
-                                         memos: List[RippleLikeMemo],     // Memos to add for this transaction
-                                         destination_tag: Option[Long]    // An arbitrary unsigned 32-bit integer that identifies a reason for payment or a non-Ripple account
+                                         wipe_to: Option[String], // Send all available funds to the given address.
+                                         fees: Option[String], // Fees (in drop) the originator is willing to pay
+                                         memos: List[RippleLikeMemo], // Memos to add for this transaction
+                                         destination_tag: Option[Long] // An arbitrary unsigned 32-bit integer that identifies a reason for payment or a non-Ripple account
                                         ) extends CreateTransactionRequest {
     def sendToValue: List[XRPSendTo] = send_to.map { r => XRPSendTo(BigInt(r.amount), r.address) }
+
     def feesValue: Option[BigInt] = fees.map(BigInt(_))
 
     override def transactionInfo: TransactionInfo = XRPTransactionInfo(sendToValue, wipe_to, feesValue: Option[BigInt], memos, destination_tag)
   }
 
-  trait  TransactionInfo
+  trait TransactionInfo
 
   case class BTCTransactionInfo(recipient: String,
                                 feeAmount: Option[BigInt],
                                 feeLevel: Option[String],
                                 amount: BigInt,
+                                pickingStrategy: BitcoinLikePickingStrategy,
+                                pickingStrategyMaxUtxo: Int,
                                 excludeUtxos: Map[String, Int],
                                 partialTx: Option[Boolean]) extends TransactionInfo {
     lazy val feeMethod: Option[FeeMethod] = feeLevel.map { level => FeeMethod.from(level) }
@@ -167,4 +184,5 @@ object TransactionsController {
   case class ETHTransactionInfo(recipient: String, amount: BigInt, gasLimit: Option[BigInt], gasPrice: Option[BigInt], contract: Option[String]) extends TransactionInfo
 
   case class XRPTransactionInfo(sendTo: List[XRPSendTo], wipeTo: Option[String], fees: Option[BigInt], memos: List[RippleLikeMemo], destinationTag: Option[Long]) extends TransactionInfo
+
 }

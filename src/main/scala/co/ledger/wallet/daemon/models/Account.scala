@@ -21,7 +21,6 @@ import co.ledger.wallet.daemon.schedulers.observers.{SynchronizationEventReceive
 import co.ledger.wallet.daemon.services.LogMsgMaker
 import co.ledger.wallet.daemon.utils.HexUtils
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.common.primitives.UnsignedInteger
 import com.twitter.inject.Logging
 import co.ledger.wallet.daemon.utils.Utils.RichBigInt
 
@@ -233,7 +232,7 @@ object Account extends Logging {
       }
       tx <- a.asBitcoinLikeAccount().buildTransaction(partial)
         .sendToAddress(c.convertAmount(ti.amount), ti.recipient)
-        .pickInputs(BitcoinLikePickingStrategy.OPTIMIZE_SIZE, UnsignedInteger.MAX_VALUE.intValue())
+        .pickInputs(ti.pickingStrategy, ti.pickingStrategyMaxUtxo)
         .setFeesPerByte(feesPerByte)
         .build()
       v <- Bitcoin.newUnsignedTransactionView(tx, feesPerByte.toBigInt.asScala)
