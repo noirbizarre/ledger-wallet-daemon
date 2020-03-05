@@ -3,6 +3,7 @@ package co.ledger.wallet.daemon.clients
 import java.net.URL
 
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
+import co.ledger.wallet.daemon.utils.Utils
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache, RemovalNotification}
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.service.{Backoff, RetryBudget}
@@ -40,10 +41,12 @@ class ScalaHttpClientPool extends Logging {
 
   def execute(host: Host, request: Request): com.twitter.util.Future[Response] =
     connectionPools.get(host)(request).map(response => {
-      info(s"Received from ${request.uri} status=${response.status.code} error=${isOnError(response.status.code)} - statusText=${response.status.reason} - Request : $request " +
-        s" - Payload : ${request.getContentString()}")
+        info(s"Received from ${request.host.getOrElse("No host")} - ${request.uri} status=${response.status.code} " +
+          s"error=${isOnError(response.status.code)} - statusText=${response.status.reason} - " +
+          s"Request : $request - (Payload : ${Utils.preview(request.getContentString(), 200)}) - " +
+          s"Response : $response - (Payload : ${Utils.preview(response.getContentString(), 200)})")
       response
-    })
+    }).onFailure(th => error(s"Failed to execute request on host $host with request $request. Error message : ${th.getMessage}", th))
 }
 
 object ScalaHttpClientPool {

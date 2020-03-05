@@ -74,5 +74,13 @@ object Utils {
     }
   }
 
+  def preview(s: String, n: Int): String = {
+    if (s.length <= n) {
+      s
+    } else {
+      s.substring(0, n).concat("[TRUNCATED]")
+    }
+  }
+
   implicit def dateToLocalDate(date: Date): LocalDate = date.toInstant.atZone(ZoneId.systemDefault()).toLocalDate
 }

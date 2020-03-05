@@ -32,7 +32,8 @@ class HttpCoreClientPool(val ec: ExecutionContext, client: ScalaHttpClientPool) 
           }
           client.execute(host, req)
             .map { response =>
-              info(s"Received from ${request.getUrl} status=${response.status.code} error=${isOnError(response.status.code)} - statusText=${response.status.reason}")
+              info(s"Core Http received from ${request.getUrl} status=${response.status.code} error=${isOnError(response.status.code)} " +
+                s"- statusText=${response.status.reason}")
               new ScalaHttpUrlConnection(
                 response.status.code,
                 response.status.reason,
