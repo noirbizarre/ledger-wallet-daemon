@@ -26,10 +26,14 @@ class HttpCoreClientPool(val ec: ExecutionContext, client: ScalaHttpClientPool) 
       .flatMap {
         case Success(host) =>
           val req: Request = Request(resolveMethod(request.getMethod), request.getUrl)
+          req.headerMap.put("User-Agent", "ledger-lib-core")
+          req.headerMap.put("Content-Type", "application/json")
           request.getHeaders.entrySet.forEach(hkv => req.headerMap.put(hkv.getKey, hkv.getValue))
+
           if (request.getBody.nonEmpty) {
             req.content(Buf.ByteArray.Owned(request.getBody))
           }
+
           client.execute(host, req)
             .map { response =>
               info(s"Core Http received from ${request.getUrl} status=${response.status.code} error=${isOnError(response.status.code)} " +
