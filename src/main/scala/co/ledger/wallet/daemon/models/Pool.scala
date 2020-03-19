@@ -62,6 +62,7 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
   def wallets: Future[Seq[core.Wallet]] = {
     coreP.getWalletCount().flatMap { count =>
       val batch = 20
+
       def walletsFromOffset(offset: Int): Future[List[core.Wallet]] = {
         val size = Math.min(batch, count - offset)
         if (size <= 0) {
@@ -73,6 +74,7 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
           } yield fetchWallets ++ nextWallets
         }
       }
+
       walletsFromOffset(0)
     }
   }
@@ -256,6 +258,8 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
     val wsUrl = DaemonConfiguration.explorer.ws.getOrElse(currencyName, DaemonConfiguration.explorer.ws("default"))
     walletConfig.putString("BLOCKCHAIN_OBSERVER_WS_ENDPOINT", wsUrl)
 
+    val disableSyncToken: Boolean = DaemonConfiguration.explorer.api.paths.get(currencyName).exists(_.disableSyncToken)
+    walletConfig.putBoolean("DEACTIVATE_SYNC_TOKEN", disableSyncToken)
     walletConfig.putInt("RIPPLE_LAST_LEDGER_SEQUENCE_OFFSET", DaemonConfiguration.rippleLastLedgerSequenceOffset)
 
     walletConfig

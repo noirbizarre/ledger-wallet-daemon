@@ -100,6 +100,26 @@ explorer = {
         currency = default
         host = "api.ledgerwallet.com"
         port = 80
+        disable_sync_token=false
+        disable_sync_token=${?DEFAULT_DISABLE_SYNC_TOKEN}
+      }
+     {
+        currency = bitcoin
+        host = "api.ledgerwallet.com"
+        host = ${?WALLET_BTC_EXPLORER_ENDPOINT}
+        port = 80
+        port = ${?WALLET_BTC_EXPLORER_PORT}
+        disable_sync_token=false
+        disable_sync_token=${?BTC_DISABLE_SYNC_TOKEN}
+      }
+      {
+        currency = litecoin
+        host = "api.ledgerwallet.com"
+        host = ${?WALLET_LTC_EXPLORER_ENDPOINT}
+        port = 80
+        port = ${?WALLET_LTC_EXPLORER_PORT}
+        disable_sync_token=false
+        disable_sync_token=${?LTC_DISABLE_SYNC_TOKEN}
       }
       {
         currency = ethereum
@@ -109,6 +129,8 @@ explorer = {
         port = ${?WALLET_ETH_EXPLORER_PORT}
         fallback = "https://mainnet.infura.io/v3/c0c3514370b2454d9e58a001876167af"
         fallback = ${?WALLET_ETH_EXPLORER_FALLBACK}
+        disable_sync_token=false
+        disable_sync_token=${?ETH_DISABLE_SYNC_TOKEN}
       }
       {
         currency = ethereum_classic
@@ -116,6 +138,8 @@ explorer = {
         host = ${?WALLET_ETC_EXPLORER_ENDPOINT}
         port = 80
         port = ${?WALLET_ETC_EXPLORER_PORT}
+        disable_sync_token=false
+        disable_sync_token=${?ETC_DISABLE_SYNC_TOKEN}
       }
       {
         currency = ethereum_ropsten
@@ -125,6 +149,8 @@ explorer = {
         port = ${?WALLET_ETH_ROPSTEN_EXPLORER_PORT}
         fallback = "ropsten.infura.io/v3/c0c3514370b2454d9e58a001876167af"
         fallback = ${?WALLET_ETH_ROPSTEN_EXPLORER_FALLBACK}
+        disable_sync_token=false
+        disable_sync_token=${?ETH_ROPSTEN_DISABLE_SYNC_TOKEN}
       }
       {
         currency = ripple
@@ -132,6 +158,8 @@ explorer = {
         host = ${?WALLET_XRP_EXPLORER_ENDPOINT}
         port = 51234
         port = ${?WALLET_XRP_EXPLORER_PORT}
+        disable_sync_token=false
+        disable_sync_token=${?RIPPLE_DISABLE_SYNC_TOKEN}
       }
     ]
   }

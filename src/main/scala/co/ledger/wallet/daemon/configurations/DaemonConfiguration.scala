@@ -197,7 +197,9 @@ object DaemonConfiguration {
       val host = path.getString("host")
       val port = path.getInt("port")
       val fallback = Try(path.getString("fallback")).toOption
-      currency -> PathConfig(host, port, fallback)
+      val disableSyncToken = Try(path.getBoolean("disable_sync_token")).getOrElse(false)
+
+      currency -> PathConfig(host, port, disableSyncToken, fallback)
     }.toMap
     val ws = explorer.getObject("ws").unwrapped().asScala.toMap.mapValues(_.toString)
     ExplorerConfig(
@@ -216,9 +218,9 @@ object DaemonConfiguration {
 
   case class ApiConfig(fallbackTimeout: Int, paths: Map[String, PathConfig])
 
-  case class PathConfig(host: String, port: Int, fallback: Option[String]) {
+  case class PathConfig(host: String, port: Int, disableSyncToken: Boolean, fallback: Option[String]) {
     def filterPrefix: PathConfig = {
-      PathConfig(host.replaceFirst(".+?://", ""), port, fallback.map(_.replaceFirst(".+?://", "")))
+      PathConfig(host.replaceFirst(".+?://", ""), port, disableSyncToken, fallback.map(_.replaceFirst(".+?://", "")))
     }
   }
 

@@ -1,6 +1,6 @@
 name := "daemon"
 
-version := "0.0.0"
+version := "2.5.7"
 
 organization := "co.ledger"
 
