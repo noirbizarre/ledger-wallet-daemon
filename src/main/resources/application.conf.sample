@@ -87,7 +87,7 @@ disable_whitelist = true
 
 core_data_path = "core_data"
 
-update_wallet_config = false
+update_wallet_config = true
 update_wallet_config = ${?WALLET_UPDATE_WALLET_CONFIG}
 
 explorer = {
@@ -98,14 +98,16 @@ explorer = {
     paths = [
       {
         currency = default
-        host = "api.ledgerwallet.com"
+        host = "http://api.ledgerwallet.com"
+        host = ${?DEFAULT_EXPLORER_ENDPOINT}
         port = 80
+        host = ${?DEFAULT_EXPLORER_PORT}
         disable_sync_token=false
         disable_sync_token=${?DEFAULT_DISABLE_SYNC_TOKEN}
       }
      {
         currency = bitcoin
-        host = "api.ledgerwallet.com"
+        host = "http://api.ledgerwallet.com"
         host = ${?WALLET_BTC_EXPLORER_ENDPOINT}
         port = 80
         port = ${?WALLET_BTC_EXPLORER_PORT}
@@ -114,7 +116,7 @@ explorer = {
       }
       {
         currency = litecoin
-        host = "api.ledgerwallet.com"
+        host = "http://api.ledgerwallet.com"
         host = ${?WALLET_LTC_EXPLORER_ENDPOINT}
         port = 80
         port = ${?WALLET_LTC_EXPLORER_PORT}
