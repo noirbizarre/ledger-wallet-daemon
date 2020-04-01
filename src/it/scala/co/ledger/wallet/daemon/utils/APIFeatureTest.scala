@@ -67,6 +67,10 @@ trait APIFeatureTest extends FeatureTest {
     server.httpPost(s"/pools/$poolName/wallets/$walletName/accounts", accountCreationBody, headers = defaultHeaders, andExpect = expected)
   }
 
+  protected def assertCreateAccountExtended(accountCreationBody: String, poolName: String, walletName: String, expected: Status): Response = {
+    server.httpPost(s"/pools/$poolName/wallets/$walletName/accounts/extended", accountCreationBody, headers = defaultHeaders, andExpect = expected)
+  }
+
   protected def deleteAccount(poolName: String, walletName: String, accountIdx: Int, expected: Status): Response = {
     server.httpDelete(s"/pools/$poolName/wallets/$walletName/accounts/$accountIdx", headers = defaultHeaders, andExpect = expected)
   }
