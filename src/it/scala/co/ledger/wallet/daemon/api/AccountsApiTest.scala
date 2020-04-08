@@ -80,7 +80,7 @@ class AccountsApiTest extends APIFeatureTest {
     assertWalletCreation("account_pool", "accounts_wallet", "bitcoin", Status.Ok)
     assertCreateAccount(CORRECT_BODY_BITCOIN, "account_pool", "accounts_wallet", Status.Ok)
     val r = parse[Seq[FreshAddressView]](getAddresses("account_pool", "accounts_wallet", 0, 0, 1))
-    assert( r.size == 4)
+    assert(r.size == 4)
     deletePool("account_pool")
   }
 
@@ -92,7 +92,7 @@ class AccountsApiTest extends APIFeatureTest {
     val utxoList = parse[UtxoAccountResponse](assertGetUTXO(poolName, "account_wallet", index = 0, Status.Ok))
     // FIXME : There is no UTXO on this account so the result is empty
     assert(utxoList.utxos.isEmpty)
-    assert(0  === utxoList.count)
+    assert(0 === utxoList.count)
     deletePool(poolName)
   }
 
@@ -307,11 +307,31 @@ class AccountsApiTest extends APIFeatureTest {
     createPool(poolName)
     assertWalletCreation(poolName, walletName, "ethereum", Status.Ok)
     assertCreateAccountExtended(CORRECT_BODY_ETH, poolName, walletName, Status.Ok)
-/*
-    assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, None, 2, 0), Status.BadRequest)
-    assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, Option(UUID.randomUUID), 2, 0), Status.BadRequest)
-    assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(Option(UUID.randomUUID), None, 2, 0), Status.BadRequest)
-    */
+    /*
+        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, None, 2, 0), Status.BadRequest)
+        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, Option(UUID.randomUUID), 2, 0), Status.BadRequest)
+        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(Option(UUID.randomUUID), None, 2, 0), Status.BadRequest)
+        */
+
+    deletePool(poolName)
+  }
+
+  test("AccountsApi#Create XRP account") {
+    val poolName = "op_pool"
+    val walletName = "xrpWallet"
+    createPool(poolName)
+    assertWalletCreation(poolName, walletName, "ripple", Status.Ok)
+    assertCreateAccount(CORRECT_BODY_XRP, poolName, walletName, Status.Ok)
+    val addresses = parse[Seq[FreshAddressView]](assertGetFreshAddresses(poolName, walletName, index = 0, Status.Ok))
+    info(s"Here are addresses : $addresses")
+    assertSyncAccount(poolName, walletName, 0)
+    assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, None, 1000, 0), Status.Ok)
+
+    /*
+        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, None, 2, 0), Status.BadRequest)
+        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, Option(UUID.randomUUID), 2, 0), Status.BadRequest)
+        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(Option(UUID.randomUUID), None, 2, 0), Status.BadRequest)
+        */
 
     deletePool(poolName)
   }
@@ -378,20 +398,33 @@ class AccountsApiTest extends APIFeatureTest {
       """]""" +
       """}"""
 
-/*
-  private val CORRECT_BODY_ETH2 =
+  private val CORRECT_BODY_XRP =
     """{""" +
       """"account_index": 0,""" +
       """"derivations": [""" +
       """{""" +
       """"owner": "main",""" +
-      """"path": "44'/1'/0'",""" +
-      """"pub_key": "045650BE990F3CD39DF6CBAEBB8C06646727B1629509F993883681AE815EE1F3F76CC4628A600F15806D8A25AE164C061BF5EAB3A01BD8A7E8DB3BAAC07629DC67",""" +
-      """"chain_code": "81F18B05DF5F54E5602A968D39AED1ED4EDC146F5971C4E84AA8273376B05D49"""" +
+      """"path": "44'/144'/2'",""" +
+      """"pub_key": "03432A07E9AE9D557F160D9B1856F909E421B399E12673EEE0F4045F4F7BA151CF",""" +
+      """"chain_code": "5D958E80B0373FA505B95C1DD175B0588205D1620C56F7247B028EBCB0FB5032"""" +
       """}""" +
       """]""" +
       """}"""
-*/
+
+  /*
+    private val CORRECT_BODY_ETH2 =
+      """{""" +
+        """"account_index": 0,""" +
+        """"derivations": [""" +
+        """{""" +
+        """"owner": "main",""" +
+        """"path": "44'/1'/0'",""" +
+        """"pub_key": "045650BE990F3CD39DF6CBAEBB8C06646727B1629509F993883681AE815EE1F3F76CC4628A600F15806D8A25AE164C061BF5EAB3A01BD8A7E8DB3BAAC07629DC67",""" +
+        """"chain_code": "81F18B05DF5F54E5602A968D39AED1ED4EDC146F5971C4E84AA8273376B05D49"""" +
+        """}""" +
+        """]""" +
+        """}"""
+  */
   private val CORRECT_BODY_BITCOIN =
     """{""" +
       """"account_index": 0,""" +

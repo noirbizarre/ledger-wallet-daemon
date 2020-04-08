@@ -278,10 +278,13 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
               walletConfig.putString("BLOCKCHAIN_EXPLORER_VERSION", version)
             case _ =>
           }
-          new URL(s"${path.host}:${path.port}").toString
-        case None => ConfigurationDefaults.BLOCKCHAIN_DEFAULT_API_ENDPOINT
+          new URL(s"${path.host}:${path.port}")
+        case None => new URL(s"${ConfigurationDefaults.BLOCKCHAIN_DEFAULT_API_ENDPOINT}:433")
       }
-      walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", apiUrl)
+      walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", s"${apiUrl.getProtocol}://${apiUrl.getHost}")
+      // For ripple only ?
+      walletConfig.putString("BLOCKCHAIN_EXPLORER_PORT", apiUrl.getPort.toString)
+
       val wsUrl = DaemonConfiguration.explorer.ws.getOrElse(currencyName, DaemonConfiguration.explorer.ws("default"))
       walletConfig.putString("BLOCKCHAIN_OBSERVER_WS_ENDPOINT", wsUrl)
       val disableSyncToken: Boolean = DaemonConfiguration.explorer.api.paths.get(currencyName).exists(_.disableSyncToken)
