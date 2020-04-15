@@ -3,7 +3,7 @@ package co.ledger.wallet.daemon.utils
 import java.util.Date
 
 import co.ledger.wallet.daemon.ServerImpl
-import co.ledger.wallet.daemon.services.ECDSAService
+import co.ledger.wallet.daemon.services.{ECDSAService, OperationQueryParams}
 import com.lambdaworks.codec.Base64
 import com.twitter.finagle.http.{Response, Status}
 import com.twitter.finatra.http.EmbeddedHttpServer
@@ -73,6 +73,57 @@ trait APIFeatureTest extends FeatureTest {
 
   protected def deleteAccount(poolName: String, walletName: String, accountIdx: Int, expected: Status): Response = {
     server.httpDelete(s"/pools/$poolName/wallets/$walletName/accounts/$accountIdx", headers = defaultHeaders, andExpect = expected)
+  }
+
+
+  protected def assertGetAccountOp(poolName: String, walletName: String, accountIndex: Int, uid: String, fullOp: Int, expected: Status): Response = {
+    val sb = new StringBuilder(s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/operations/$uid?full_op=$fullOp")
+    server.httpGet(sb.toString(), headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertGetFirstOperation(index: Int, poolName: String, walletName: String, expected: Status): Response = {
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/operations/first", headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def history(poolName: String, walletName: String, accountIndex: Int, start: String, end: String, timeInterval: String, expected: Status): Response = {
+    server.httpGet(
+      path = s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/history?start=$start&end=$end&time_interval=$timeInterval",
+      headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertGetAccountOps(poolName: String, walletName: String, accountIndex: Int, params: OperationQueryParams, expected: Status): Response = {
+    val sb = new StringBuilder(s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/operations?")
+    params.previous.foreach { p =>
+      sb.append("previous=" + p.toString + "&")
+    }
+    params.next.foreach { n =>
+      sb.append("next=" + n.toString + "&")
+    }
+    sb.append(s"batch=${params.batch}&full_op=${params.fullOp}")
+    server.httpGet(sb.toString(), headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertGetAccounts(index: Option[Int], poolName: String, walletName: String, expected: Status): Response = {
+    index match {
+      case None => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts", headers = defaultHeaders, andExpect = expected)
+      case Some(i) => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$i", headers = defaultHeaders, andExpect = expected)
+    }
+  }
+
+  protected def assertGetAccountCreationInfo(poolName: String, walletName: String, index: Option[Int], expected: Status): Response = {
+    index match {
+      case None => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/next", headers = defaultHeaders, andExpect = expected)
+      case Some(i) => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/next?account_index=$i", headers = defaultHeaders, andExpect = expected)
+    }
+  }
+
+  protected def assertGetFreshAddresses(poolName: String, walletName: String, index: Int, expected: Status): Response = {
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/addresses/fresh", headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertGetUTXO(poolName: String, walletName: String, index: Int, expected: Status): Response = {
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo", headers = defaultHeaders, andExpect = expected)
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo?offset=2&batch=10", headers = defaultHeaders, andExpect = expected)
   }
 
   private def lwdBasicAuthorisationHeader(seedName: String, time: Date = new Date()) = {
