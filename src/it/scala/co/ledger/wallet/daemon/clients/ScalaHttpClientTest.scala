@@ -1,5 +1,6 @@
 package co.ledger.wallet.daemon.clients
 
+import java.net.URL
 import java.util
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
@@ -83,7 +84,6 @@ class ScalaHttpClientTest extends AssertionsForJUnit with Logging {
   @Test
   def testPoolsAreCachedByHost(): Unit = {
     val scalaService: ScalaHttpClientPool = new ScalaHttpClientPool
-    implicit val service: HttpCoreClientPool = new HttpCoreClientPool(ec, scalaService)
     val https = "https"
     val http = "http"
     val cacheSizeStart = scalaService.poolCacheSize
@@ -112,28 +112,32 @@ class ScalaHttpClientTest extends AssertionsForJUnit with Logging {
     assert(!scalaService.isHostCached(host4))
     assert(!scalaService.isHostCached(host5))
 
-    awaitExecution(url1, Array.emptyByteArray, HttpMethod.GET, 200)
+    scalaService.serviceForHost(NetUtils.urlToHost(new URL(url1)))
     assert(scalaService.poolCacheSize == cacheSizeStart + 1)
     assert(scalaService.isHostCached(host1))
 
-    awaitExecution(url2, Array.emptyByteArray, HttpMethod.GET, 200)
+    scalaService.serviceForHost(NetUtils.urlToHost(new URL(url2)))
     assert(scalaService.poolCacheSize == cacheSizeStart + 1)
     assert(scalaService.isHostCached(host1))
 
-    awaitExecution(url3, Array.emptyByteArray, HttpMethod.GET, 200)
     // An other protocol means an new connection pool
+    scalaService.serviceForHost(NetUtils.urlToHost(new URL(url3)))
     assert(scalaService.poolCacheSize == cacheSizeStart + 2)
     assert(scalaService.isHostCached(host3))
 
-    awaitExecution(url4, Array.emptyByteArray, HttpMethod.GET, 200)
     // An other host, new connection pool
+    scalaService.serviceForHost(NetUtils.urlToHost(new URL(url4)))
     assert(scalaService.poolCacheSize == cacheSizeStart + 3)
     assert(scalaService.isHostCached(host4))
 
-    awaitExecution(url5, Array.emptyByteArray, HttpMethod.GET, 200)
+    scalaService.serviceForHost(NetUtils.urlToHost(new URL(url5)))
     // same host but new port means new connection pool
     assert(scalaService.poolCacheSize == cacheSizeStart + 4)
     assert(scalaService.isHostCached(host5))
+
+    // Ask twice the same host does not change number of cached hosts
+    scalaService.serviceForHost(NetUtils.urlToHost(new URL(url5)))
+    assert(scalaService.poolCacheSize == cacheSizeStart + 4)
   }
 
   private def awaitExecution(url: String, bodyByte: Array[Byte], httpMethod: HttpMethod)(implicit service: HttpCoreClientPool): Either[co.ledger.core.Error, HttpUrlConnection] = {

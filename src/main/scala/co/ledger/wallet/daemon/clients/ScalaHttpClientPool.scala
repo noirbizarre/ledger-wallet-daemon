@@ -38,8 +38,10 @@ class ScalaHttpClientPool extends Logging {
 
   def isHostCached(host: Host): Boolean = connectionPools.asMap().containsKey(host)
 
+  protected[clients] def serviceForHost(host: Host): Service[Request, Response] = connectionPools.get(host)
+
   def execute(host: Host, request: Request): com.twitter.util.Future[Response] =
-    connectionPools.get(host)(request).map(response => {
+    serviceForHost(host)(request).map(response => {
       info(s"Received from ${request.host.getOrElse("No host")} - ${request.uri} status=${response.status.code} " +
         s"error=${isOnError(response.status.code)} - statusText=${response.status.reason} - " +
         s"Request : $request - (Payload : ${Utils.preview(request.getContentString(), 200)}) - " +
