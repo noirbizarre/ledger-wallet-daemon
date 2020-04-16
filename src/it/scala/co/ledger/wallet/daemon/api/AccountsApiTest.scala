@@ -3,8 +3,9 @@ package co.ledger.wallet.daemon.api
 import java.util.UUID
 
 import co.ledger.core.TimePeriod
-import co.ledger.wallet.daemon.controllers.AccountsController.UtxoAccountResponse
-import co.ledger.wallet.daemon.models.{AccountDerivationView, AccountView, FreshAddressView}
+import co.ledger.wallet.daemon.controllers.AccountsController.{HistoryResponse, TokenHistoryResponse, UtxoAccountResponse}
+import co.ledger.wallet.daemon.models.Operations.PackedOperationsView
+import co.ledger.wallet.daemon.models.{AccountDerivationView, AccountView, ERC20AccountView, FreshAddressView}
 import co.ledger.wallet.daemon.services.OperationQueryParams
 import co.ledger.wallet.daemon.utils.APIFeatureTest
 import com.fasterxml.jackson.databind.JsonNode
@@ -294,109 +295,11 @@ class AccountsApiTest extends APIFeatureTest {
     createPool("op_pool_mal")
     assertWalletCreation("op_pool_mal", "op_wallet", "bitcoin", Status.Ok)
     assertCreateAccount(CORRECT_BODY_BITCOIN, "op_pool_mal", "op_wallet", Status.Ok)
-
     assertGetAccountOps("op_pool_non_exist", "op_wallet", 0, OperationQueryParams(None, None, 2, 0), Status.BadRequest)
     assertGetAccountOps("op_pool_mal", "op_wallet", 0, OperationQueryParams(None, Option(UUID.randomUUID), 2, 0), Status.BadRequest)
     assertGetAccountOps("op_pool_mal", "op_wallet", 0, OperationQueryParams(Option(UUID.randomUUID), None, 2, 0), Status.BadRequest)
     deletePool("op_pool_mal")
   }
-
-  test("AccountsApi#Create eth account") {
-    val poolName = "op_pool"
-    val walletName = "ethWallet"
-    createPool(poolName)
-    assertWalletCreation(poolName, walletName, "ethereum", Status.Ok)
-    assertCreateAccountExtended(CORRECT_BODY_ETH, poolName, walletName, Status.Ok)
-    /*
-        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, None, 2, 0), Status.BadRequest)
-        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, Option(UUID.randomUUID), 2, 0), Status.BadRequest)
-        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(Option(UUID.randomUUID), None, 2, 0), Status.BadRequest)
-        */
-
-    deletePool(poolName)
-  }
-
-  test("AccountsApi#Create XRP account") {
-    val poolName = "op_pool"
-    val walletName = "xrpWallet"
-    createPool(poolName)
-    assertWalletCreation(poolName, walletName, "ripple", Status.Ok)
-    assertCreateAccount(CORRECT_BODY_XRP, poolName, walletName, Status.Ok)
-    val addresses = parse[Seq[FreshAddressView]](assertGetFreshAddresses(poolName, walletName, index = 0, Status.Ok))
-    info(s"Here are addresses : $addresses")
-    assertSyncAccount(poolName, walletName, 0)
-    assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, None, 1000, 0), Status.Ok)
-
-    /*
-        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, None, 2, 0), Status.BadRequest)
-        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(None, Option(UUID.randomUUID), 2, 0), Status.BadRequest)
-        assertGetAccountOps(poolName, "op_wallet", 0, OperationQueryParams(Option(UUID.randomUUID), None, 2, 0), Status.BadRequest)
-        */
-
-    deletePool(poolName)
-  }
-
-  private def assertGetAccountOp(poolName: String, walletName: String, accountIndex: Int, uid: String, fullOp: Int, expected: Status): Response = {
-    val sb = new StringBuilder(s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/operations/$uid?full_op=$fullOp")
-    server.httpGet(sb.toString(), headers = defaultHeaders, andExpect = expected)
-  }
-
-  private def assertGetFirstOperation(index: Int, poolName: String, walletName: String, expected: Status): Response = {
-    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/operations/first", headers = defaultHeaders, andExpect = expected)
-  }
-
-  private def history(poolName: String, walletName: String, accountIndex: Int, start: String, end: String, timeInterval: String, expected: Status): Response = {
-    server.httpGet(
-      path = s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/history?start=$start&end=$end&time_interval=$timeInterval",
-      headers = defaultHeaders, andExpect = expected)
-  }
-
-  private def assertGetAccountOps(poolName: String, walletName: String, accountIndex: Int, params: OperationQueryParams, expected: Status): Response = {
-    val sb = new StringBuilder(s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/operations?")
-    params.previous.foreach { p =>
-      sb.append("previous=" + p.toString + "&")
-    }
-    params.next.foreach { n =>
-      sb.append("next=" + n.toString + "&")
-    }
-    sb.append(s"batch=${params.batch}&full_op=${params.fullOp}")
-    server.httpGet(sb.toString(), headers = defaultHeaders, andExpect = expected)
-  }
-
-  private def assertGetAccounts(index: Option[Int], poolName: String, walletName: String, expected: Status): Response = {
-    index match {
-      case None => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts", headers = defaultHeaders, andExpect = expected)
-      case Some(i) => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$i", headers = defaultHeaders, andExpect = expected)
-    }
-  }
-
-  private def assertGetAccountCreationInfo(poolName: String, walletName: String, index: Option[Int], expected: Status): Response = {
-    index match {
-      case None => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/next", headers = defaultHeaders, andExpect = expected)
-      case Some(i) => server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/next?account_index=$i", headers = defaultHeaders, andExpect = expected)
-    }
-  }
-
-  private def assertGetFreshAddresses(poolName: String, walletName: String, index: Int, expected: Status): Response = {
-    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/addresses/fresh", headers = defaultHeaders, andExpect = expected)
-  }
-
-  private def assertGetUTXO(poolName: String, walletName: String, index: Int, expected: Status): Response = {
-    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo", headers = defaultHeaders, andExpect = expected)
-    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo?offset=2&batch=10", headers = defaultHeaders, andExpect = expected)
-  }
-
-  private val CORRECT_BODY_ETH =
-    """{""" +
-      """"account_index": 0,""" +
-      """"derivations": [""" +
-      """{""" +
-      """"owner": "main",""" +
-      """"path": "44'/60'/0'",""" +
-      """"extended_key": "xpub6EM1gLShjupLBK87mLsXQer5Q3VrqCXehd7e37jrQQx7aGUwMrym2mLjcmZWVuh2bscKooHvXov5D16VzFbc8ou77pnHhQ4y5m2mT5FKi2r"""" +
-      """}""" +
-      """]""" +
-      """}"""
 
   private val CORRECT_BODY_XRP =
     """{""" +
@@ -411,20 +314,133 @@ class AccountsApiTest extends APIFeatureTest {
       """]""" +
       """}"""
 
-  /*
-    private val CORRECT_BODY_ETH2 =
+
+  test("AccountsApi#Create XRP account") {
+    val poolName = "op_pool"
+    val walletName = "xrpWallet"
+    createPool(poolName)
+    assertWalletCreation(poolName, walletName, "ripple", Status.Ok)
+    assertCreateAccount(CORRECT_BODY_XRP, poolName, walletName, Status.Ok)
+    val addresses = parse[Seq[FreshAddressView]](assertGetFreshAddresses(poolName, walletName, index = 0, Status.Ok))
+    assert(addresses.nonEmpty)
+    info(s"Here are addresses : $addresses")
+    assertSyncAccount(poolName, walletName, 0)
+    val operations = parse[Map[String, JsonNode]](assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, None, 1000, 0), Status.Ok))
+    assert(operations.nonEmpty)
+    deletePool(poolName)
+  }
+
+  private val CORRECT_BODY_ETH =
+    """{""" +
+      """"account_index": 0,""" +
+      """"derivations": [""" +
       """{""" +
-        """"account_index": 0,""" +
-        """"derivations": [""" +
-        """{""" +
-        """"owner": "main",""" +
-        """"path": "44'/1'/0'",""" +
-        """"pub_key": "045650BE990F3CD39DF6CBAEBB8C06646727B1629509F993883681AE815EE1F3F76CC4628A600F15806D8A25AE164C061BF5EAB3A01BD8A7E8DB3BAAC07629DC67",""" +
-        """"chain_code": "81F18B05DF5F54E5602A968D39AED1ED4EDC146F5971C4E84AA8273376B05D49"""" +
-        """}""" +
-        """]""" +
-        """}"""
-  */
+      """"owner": "main",""" +
+      """"path": "44'/60'/0'",""" +
+      """"extended_key": "xpub6EM1gLShjupLBK87mLsXQer5Q3VrqCXehd7e37jrQQx7aGUwMrym2mLjcmZWVuh2bscKooHvXov5D16VzFbc8ou77pnHhQ4y5m2mT5FKi2r"""" +
+      """}""" +
+      """]""" +
+      """}"""
+
+  private val CORRECT_BODY_ETH_ROPSTEN =
+    """{""" +
+      """"account_index": 0,""" +
+      """"derivations": [""" +
+      """{""" +
+      """"owner": "main",""" +
+      """"path": "44'/60'/0'",""" +
+      """"pub_key": "045650BE990F3CD39DF6CBAEBB8C06646727B1629509F993883681AE815EE1F3F76CC4628A600F15806D8A25AE164C061BF5EAB3A01BD8A7E8DB3BAAC07629DC67",""" +
+      """"chain_code": "81F18B05DF5F54E5602A968D39AED1ED4EDC146F5971C4E84AA8273376B05D49"""" + """}""" +
+      """]""" +
+      """}"""
+
+  test("AccountsApi#Create ETH account") {
+    val poolName = "op_pool"
+    val walletName = "ethWallet"
+    createPool(poolName)
+    assertWalletCreation(poolName, walletName, "ethereum", Status.Ok)
+    assertCreateAccountExtended(CORRECT_BODY_ETH, poolName, walletName, Status.Ok)
+    val addresses = parse[Seq[FreshAddressView]](assertGetFreshAddresses(poolName, walletName, index = 0, Status.Ok))
+    info(s"ETH address : $addresses")
+    assert(addresses.size == 1)
+    assertSyncAccount(poolName, walletName, 0)
+    assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, None, 5, 0), Status.Ok)
+    deletePool(poolName)
+  }
+
+  test("AccountsApi#Create ETH ropsten account") {
+    val poolName = "op_pool"
+    val walletName = "ethRopstenWallet"
+    createPool(poolName)
+    assertWalletCreation(poolName, walletName, "ethereum_ropsten", Status.Ok)
+    assertCreateAccount(CORRECT_BODY_ETH_ROPSTEN, poolName, walletName, Status.Ok)
+    // Expect one address on eth accounts
+    val addresses = parse[Seq[FreshAddressView]](assertGetFreshAddresses(poolName, walletName, index = 0, Status.Ok))
+    info(s"ETH address : $addresses")
+    assert(addresses.size == 1)
+
+    // Sync and get operations, check the two firsts pages does not have any intersections
+    assertSyncAccount(poolName, walletName, 0)
+    val response: PackedOperationsView = parse[PackedOperationsView](assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, None, 5, 0), Status.Ok))
+    val response2: PackedOperationsView = parse[PackedOperationsView](assertGetAccountOps(poolName, walletName, 0, OperationQueryParams(None, response.next, 5, 0), Status.Ok))
+    assert(response.operations.size == 5)
+    assert(response2.operations.size == 5)
+    assert(response2.operations.intersect(response.operations).isEmpty)
+
+    // Balance history on 3 days, end exclusive, no new operations on the interval
+    val historyResponse = parse[HistoryResponse](history(poolName, walletName, 0, "2020-04-13T00:00:00Z", "2020-04-16T00:00:00Z", TimePeriod.DAY.toString, Status.Ok))
+    assert(historyResponse.balances.size == 3)
+    assert(historyResponse.balances.head == historyResponse.balances.tail.head)
+    assert(historyResponse.balances.tail.head == historyResponse.balances.tail.tail.head)
+
+    // Check that balance = 1.976594768488753681 Ether (https://ropsten.etherscan.io/address/0x2EaDEDe7034243Bd2E8a574E80aFDD60409AE5c4)
+    assert(historyResponse.balances.head == BigInt.apply(1976594768488753681L))
+    deletePool(poolName)
+  }
+
+
+  protected def assertGetTokens(poolName: String, walletName: String, idx: Int, expected: Status): Response = {
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$idx/tokens", headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertGetTokensOperation(poolName: String, walletName: String, idx: Int, contractAddress: String, expected: Status): Response = {
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$idx/tokens/$contractAddress/operations", headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertGetTokensOperation(poolName: String, walletName: String, idx: Int, contractAddress: String, batch: Int, offset: Int, expected: Status): Response = {
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$idx/tokens/$contractAddress/operations?batch=$batch&offset=$offset", headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertGetTokensHistory(poolName: String, walletName: String, idx: Int, contractAddress: String, start: String, end: String, timeInterval: String, expected: Status): Response = {
+    server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$idx/tokens/$contractAddress/history?start=$start&end=$end&time_interval=$timeInterval", headers = defaultHeaders, andExpect = expected)
+  }
+
+  test("AccountsApi#Create ERC20 ropsten account") {
+    val poolName = "op_pool"
+    val walletName = "ethRopstenTokenWallet"
+    createPool(poolName)
+    assertWalletCreation(poolName, walletName, "ethereum_ropsten", Status.Ok)
+    assertCreateAccount(CORRECT_BODY_ETH_ROPSTEN, poolName, walletName, Status.Ok)
+
+    assertSyncAccount(poolName, walletName, 0)
+    val resp = parse[List[ERC20AccountView]](assertGetTokens(poolName, walletName, 0, Status.Ok))
+    info(s"Tokens : $resp")
+    assert(resp.size >= 2)
+    val contractAddress = "0x57e8ba2A915285f984988282aB9346c1336a4E11"
+
+    val allOperations = parse[List[JsonNode]](assertGetTokensOperation(poolName, walletName, 0, contractAddress, Status.Ok))
+    assert(allOperations.nonEmpty)
+
+    val batchOperations = parse[List[JsonNode]](assertGetTokensOperation(poolName, walletName, 0, contractAddress, 10, 0, Status.Ok))
+    assert(batchOperations.containsSlice(allOperations.slice(0, 10)))
+
+    val histoResponse = parse[TokenHistoryResponse](assertGetTokensHistory(poolName, walletName, 0, contractAddress, "2020-04-13T00:00:00Z", "2020-04-16T00:00:00Z", TimePeriod.DAY.toString, Status.Ok))
+    info(s"histo : $histoResponse")
+    assert(histoResponse.balances.size == 3)
+    assert(histoResponse.balances.head == BigInt("100000000000000000000"))
+    deletePool(poolName)
+  }
+
   private val CORRECT_BODY_BITCOIN =
     """{""" +
       """"account_index": 0,""" +

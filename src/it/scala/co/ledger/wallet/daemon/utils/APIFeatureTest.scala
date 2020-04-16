@@ -52,7 +52,7 @@ trait APIFeatureTest extends FeatureTest {
   }
 
   def deletePool(poolName: String): Response = {
-    server.httpDelete(s"/pools/$poolName", "", headers = defaultHeaders)
+    server.httpDelete(s"/pools/$poolName", "", headers = defaultHeaders, andExpect = Status.Ok)
   }
 
   def assertSyncPool(expected: Status): Response = {
