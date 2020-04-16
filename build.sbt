@@ -136,7 +136,6 @@ lazy val root = (project in file("."))
 
       // Tests dependencies
       "org.specs2"                   %% "specs2-mock"            % versions.specs2     % "it",
-      "org.mockito"                  %  "mockito-core"           % versions.mockito    % "it",
       "com.google.inject.extensions" %  "guice-testlib"          % versions.guice      % "it",
       "com.novocode"                 %  "junit-interface"        % versions.junitI     % "it",
       "org.scalacheck"               %% "scalacheck"             % versions.scalacheck % "it",
