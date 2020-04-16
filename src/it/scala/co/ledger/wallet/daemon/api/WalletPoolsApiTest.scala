@@ -23,10 +23,9 @@ class WalletPoolsApiTest extends APIFeatureTest {
     val wrongName = "my_pool; drop table my_pool,"
     try {
       createPool(wrongName, Status.BadRequest)
-      // TODO : Check that the pool has not been created
     } finally {
       // If status is Status.BadRequest, this do nothing
-      deletePool(wrongName)
+      deletePoolIfExists(wrongName)
     }
   }
 

@@ -89,7 +89,7 @@ jobs:
             CORE_PG_PWD: ledger_secret
             CORE_PG_DB_NAME_PREFIX: wdtest_
             CORE_PG_CONNECTION_POOL_SIZE_PER_WALLET_POOL: 2
-            SBT_OPTS: -Xmx3200m -Xss2M -XX:MaxMetaspaceSize=1024M
+            SBT_OPTS: -Xmx3200m -XX:MaxMetaspaceSize=1024M
       - codecov/upload:
           file: target/scala-2.12/coverage-report/cobertura.xml
 workflows:
