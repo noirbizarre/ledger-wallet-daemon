@@ -279,11 +279,16 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging {
             case _ =>
           }
           new URL(s"${path.host}:${path.port}")
-        case None => new URL(s"${ConfigurationDefaults.BLOCKCHAIN_DEFAULT_API_ENDPOINT}:433")
+        case None => new URL(s"${ConfigurationDefaults.BLOCKCHAIN_DEFAULT_API_ENDPOINT}")
       }
-      walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", s"${apiUrl.getProtocol}://${apiUrl.getHost}")
-      // For ripple only ?
-      walletConfig.putString("BLOCKCHAIN_EXPLORER_PORT", apiUrl.getPort.toString)
+
+      // Waiting for LLC-636 to be unified
+      if (currencyName == "ripple") {
+        walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", s"${apiUrl.getProtocol}://${apiUrl.getHost}")
+        walletConfig.putString("BLOCKCHAIN_EXPLORER_PORT", apiUrl.getPort.toString)
+      } else {
+        walletConfig.putString("BLOCKCHAIN_EXPLORER_API_ENDPOINT", s"${apiUrl.getProtocol}://${apiUrl.getHost}:${apiUrl.getPort}")
+      }
 
       val wsUrl = DaemonConfiguration.explorer.ws.getOrElse(currencyName, DaemonConfiguration.explorer.ws("default"))
       walletConfig.putString("BLOCKCHAIN_OBSERVER_WS_ENDPOINT", wsUrl)
