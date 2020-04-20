@@ -123,10 +123,7 @@ workflows:
             branches:
               only:
                 - master
-                - master-drop2
                 - develop
-                - develop-drop2
-                - release_candidate
-                - release_candidate_drop2
+                - BACK-573-commitHashOnBuild
             tags:
               only: /.*/
