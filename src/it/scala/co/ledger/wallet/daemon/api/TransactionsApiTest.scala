@@ -2,7 +2,7 @@ package co.ledger.wallet.daemon.api
 
 import co.ledger.wallet.daemon.models.FreshAddressView
 import co.ledger.wallet.daemon.utils.APIFeatureTest
-import com.twitter.finagle.http.{Response, Status}
+import com.twitter.finagle.http.Status
 import org.junit.Test
 
 @Test
@@ -29,7 +29,7 @@ class TransactionsApiTest extends APIFeatureTest {
     val addresses = parse[Seq[FreshAddressView]](assertGetFreshAddresses(poolName, walletName, 0, Status.Ok))
     info(s"Addresses : $addresses")
 
-    assertSyncPool(Status.Ok)
+    assertSyncAccount(poolName, walletName, 0)
     assertCreateTransaction(TX_BODY_WITH_EXCLUDE_UTXO, poolName, walletName, 0, Status.Ok)
     assertCreateTransaction(TX_BODY, poolName, walletName, 0, Status.BadRequest)
     assertCreateTransaction(INVALID_FEE_LEVEL_BODY, poolName, walletName, 0, Status.BadRequest)
@@ -38,13 +38,13 @@ class TransactionsApiTest extends APIFeatureTest {
     assertSignTransaction(TX_TO_SIGN_BODY, poolName, walletName, 0, Status.InternalServerError)
   }
 
-  private def assertCreateTransaction(tx: String, poolName: String, walletName: String, accountIndex: Int, expected: Status): Response = {
-    server.httpPost(
-      s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/transactions",
-      tx,
-      headers = defaultHeaders,
-      andExpect = expected
-    )
+  test("AccountsApi#Broadcast signed transaction") {
+    val walletName = "bitcoin_testnet"
+    assertWalletCreation(poolName, walletName, "bitcoin_testnet", Status.Ok)
+    assertCreateAccount(ACCOUNT_BODY, poolName, walletName, Status.Ok)
+    assertSyncAccount(poolName, walletName, 0)
+    assertSignTransaction(TESTNET_TX_TO_SIGN_BODY, poolName, "bitcoin_testnet", 0, Status.InternalServerError)
+    assertGetAccount(poolName, "bitcoin_testnet", 0, Status.Ok)
   }
 
   private val TX_TO_SIGN_BODY =
@@ -90,31 +90,6 @@ class TransactionsApiTest extends APIFeatureTest {
       """"amount": 1000""" +
       //    """"exclude_utxos":{"beabf89d72eccdcb895373096a402ae48930aa54d2b9e4d01a05e8f068e9ea49": 0 }""" +
       """}"""
-
-  test("AccountsApi#Broadcast signed transaction") {
-    assertWalletCreation(poolName, "bitcoin_testnet", "bitcoin_testnet", Status.Ok)
-    assertCreateAccount(ACCOUNT_BODY, poolName, "bitcoin_testnet", Status.Ok)
-    // assertSyncPool(Status.Ok) // remove to pass CI
-    assertSignTransaction(TESTNET_TX_TO_SIGN_BODY, poolName, "bitcoin_testnet", 0, Status.InternalServerError)
-    assertGetAccount(poolName, "bitcoin_testnet", 0, Status.Ok)
-  }
-
-  private def assertSignTransaction(tx: String, poolName: String, walletName: String, accountIndex: Int, expected: Status): Response = {
-    server.httpPost(
-      s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/transactions/sign",
-      tx,
-      headers = defaultHeaders,
-      andExpect = expected
-    )
-  }
-
-  private def assertGetAccount(poolName: String, walletName: String, accountIndex: Int, expected: Status): Response = {
-    server.httpGet(
-      s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex",
-      headers = defaultHeaders,
-      andExpect = expected
-    )
-  }
 
   private val ACCOUNT_BODY =
     """{""" +

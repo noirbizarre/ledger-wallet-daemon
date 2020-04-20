@@ -80,7 +80,6 @@ trait APIFeatureTest extends FeatureTest {
     server.httpDelete(s"/pools/$poolName/wallets/$walletName/accounts/$accountIdx", headers = defaultHeaders, andExpect = expected)
   }
 
-
   protected def assertGetAccountOp(poolName: String, walletName: String, accountIndex: Int, uid: String, fullOp: Int, expected: Status): Response = {
     val sb = new StringBuilder(s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/operations/$uid?full_op=$fullOp")
     server.httpGet(sb.toString(), headers = defaultHeaders, andExpect = expected)
@@ -129,6 +128,32 @@ trait APIFeatureTest extends FeatureTest {
   protected def assertGetUTXO(poolName: String, walletName: String, index: Int, expected: Status): Response = {
     server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo", headers = defaultHeaders, andExpect = expected)
     server.httpGet(s"/pools/$poolName/wallets/$walletName/accounts/$index/utxo?offset=2&batch=10", headers = defaultHeaders, andExpect = expected)
+  }
+
+  protected def assertSignTransaction(tx: String, poolName: String, walletName: String, accountIndex: Int, expected: Status): Response = {
+    server.httpPost(
+      s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/transactions/sign",
+      tx,
+      headers = defaultHeaders,
+      andExpect = expected
+    )
+  }
+
+  protected def assertGetAccount(poolName: String, walletName: String, accountIndex: Int, expected: Status): Response = {
+    server.httpGet(
+      s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex",
+      headers = defaultHeaders,
+      andExpect = expected
+    )
+  }
+
+  protected def assertCreateTransaction(tx: String, poolName: String, walletName: String, accountIndex: Int, expected: Status): Response = {
+    server.httpPost(
+      s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/transactions",
+      tx,
+      headers = defaultHeaders,
+      andExpect = expected
+    )
   }
 
   private def lwdBasicAuthorisationHeader(seedName: String, time: Date = new Date()) = {
