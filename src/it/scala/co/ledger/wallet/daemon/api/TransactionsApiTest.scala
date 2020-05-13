@@ -1,6 +1,9 @@
 package co.ledger.wallet.daemon.api
 
+import co.ledger.core.BitcoinLikePickingStrategy
+import co.ledger.wallet.daemon.controllers.TransactionsController.CreateBTCTransactionRequest
 import co.ledger.wallet.daemon.models.FreshAddressView
+import co.ledger.wallet.daemon.models.coins.UnsignedBitcoinTransactionView
 import co.ledger.wallet.daemon.utils.APIFeatureTest
 import com.twitter.finagle.http.Status
 import org.junit.Test
@@ -20,7 +23,31 @@ class TransactionsApiTest extends APIFeatureTest {
     super.afterAll()
   }
 
-  test("TransactionsApi#Create and sign transaction") {
+  test("TransactionsApi# Exclude UTXO on create transaction") {
+    val poolName = "transactionsExcludeUTXOTest"
+    createPool(poolName)
+    val walletName = "btcwallet"
+    assertWalletCreation(poolName, walletName, "bitcoin_testnet", Status.Ok)
+    assertCreateAccount(ACCOUNT_BODY, poolName, walletName, Status.Ok)
+    assertSyncAccount(poolName, walletName, 0)
+    
+    val btcTxRequest: CreateBTCTransactionRequest = CreateBTCTransactionRequest("mxZcpwZ7XBdfb4JcGLzdEP8WPQaGzeUeFU",
+      Some("16"), Some("NORMAL"), "100", Some(BitcoinLikePickingStrategy.DEEP_OUTPUTS_FIRST.toString), None, Some(true))
+    val btcTransacRequest = server.mapper.objectMapper.writeValueAsString(btcTxRequest)
+    info(s"Parsed Transaction : ${btcTransacRequest}")
+    val txView = parse[UnsignedBitcoinTransactionView](assertCreateTransaction(btcTransacRequest, poolName, walletName, 0, Status.Ok))
+    assert(txView.outputs.nonEmpty)
+    val utxo = txView.outputs.head
+    assert(txView.outputs.count(u => u.address == utxo.address && u.index == utxo.index) == 1)
+
+    val btcTxRequestExclude = btcTxRequest.copy(exclude_utxos = Some(Map{utxo.address -> utxo.index.toInt}))
+    val btcTransacRequestExcludeUTXO = server.mapper.objectMapper.writeValueAsString(btcTxRequestExclude)
+    val txViewExcluded = parse[UnsignedBitcoinTransactionView](assertCreateTransaction(btcTransacRequestExcludeUTXO, poolName, walletName, 0, Status.Ok))
+    assert(txViewExcluded.outputs.nonEmpty)
+    assert(txViewExcluded.outputs.count(u => u.address == utxo.address && u.index == utxo.index) == 0)
+  }
+
+  test("TransactionsApi#Create and sign BTC transaction") {
     val poolName = "transactionsCreation4Test"
     createPool(poolName)
     val walletName = "btcwallet"
@@ -38,7 +65,7 @@ class TransactionsApiTest extends APIFeatureTest {
     assertSignTransaction(TX_TO_SIGN_BODY, poolName, walletName, 0, Status.InternalServerError)
   }
 
-  test("AccountsApi#Broadcast signed transaction") {
+  test("AccountsApi#Broadcast signed BTC transaction") {
     val walletName = "bitcoin_testnet"
     assertWalletCreation(poolName, walletName, "bitcoin_testnet", Status.Ok)
     assertCreateAccount(ACCOUNT_BODY, poolName, walletName, Status.Ok)
@@ -87,8 +114,11 @@ class TransactionsApiTest extends APIFeatureTest {
     """{""" +
       """"recipient": "mxZcpwZ7XBdfb4JcGLzdEP8WPQaGzeUeFU",""" +
       """"fees_level": "NORMAL",""" +
-      """"amount": 1000""" +
-      //    """"exclude_utxos":{"beabf89d72eccdcb895373096a402ae48930aa54d2b9e4d01a05e8f068e9ea49": 0 }""" +
+      """"amount": 1000,""" +
+      """"exclude_utxos":""" +
+      """{""" +
+      """"beabf89d72eccdcb895373096a402ae48930aa54d2b9e4d01a05e8f068e9ea49":0""" +
+      """}""" +
       """}"""
 
   private val ACCOUNT_BODY =
