@@ -59,6 +59,7 @@ object Bitcoin {
   private def newUnsignedOutputView(from: core.BitcoinLikeOutput): UnsignedBitcoinOutputView = {
     UnsignedBitcoinOutputView(
       from.getAddress,
+      from.getOutputIndex.toString,
       from.getValue.toString,
       HexUtils.valueOf(from.getScript),
       Option(from.getDerivationPath).map(_.toString)
@@ -148,6 +149,7 @@ case class UnsignedBitcoinInputView(
 
 case class UnsignedBitcoinOutputView(
                                     @JsonProperty("address") address: String,
+                                    @JsonProperty("index") index: String,
                                     @JsonProperty("value") value: String,
                                     @JsonProperty("script") script: String,
                                     @JsonProperty("derivation_path") derivationPath: Option[String]
