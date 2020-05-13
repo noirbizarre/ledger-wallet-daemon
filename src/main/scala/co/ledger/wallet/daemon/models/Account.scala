@@ -258,11 +258,12 @@ object Account extends Logging {
         case Some(amount) => Future.successful(amount)
         case None => ClientFactory.apiClient.getFees(c.getName).map(f => f.getAmount(ti.feesSpeedLevel.getOrElse(FeeMethod.NORMAL)))
       }
-      tx <- a.asBitcoinLikeAccount().buildTransaction(partial)
+      builder = a.asBitcoinLikeAccount().buildTransaction(partial)
         .sendToAddress(c.convertAmount(ti.amount), ti.recipient)
         .pickInputs(ti.pickingStrategy, UnsignedInteger.MAX_VALUE.intValue())
         .setFeesPerByte(c.convertAmount(feesPerByte))
-        .build()
+      _ = for ((address, index) <- ti.excludeUtxos) builder.excludeUtxo(address, index)
+      tx <- builder.build()
       v <- Bitcoin.newUnsignedTransactionView(tx, feesPerByte)
     } yield v
   }
