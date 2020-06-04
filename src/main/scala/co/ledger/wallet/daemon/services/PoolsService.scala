@@ -2,6 +2,7 @@ package co.ledger.wallet.daemon.services
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import co.ledger.core.{Account, Operation}
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.global
 import co.ledger.wallet.daemon.database.DaemonCache
 import co.ledger.wallet.daemon.database.DefaultDaemonCache.User
@@ -65,16 +66,24 @@ class PoolsService @Inject()(daemonCache: DaemonCache) extends DaemonService {
         }).map(_.flatten)
         accounts <- Future.sequence(wallets.map { case (poolName, w) =>
           for {
+            // Dangerous in case of failure : this value can be updated meanwhile some accounts has not been updated
+            lastHeight <- w.lastBlockHeight
             accounts <- w.accounts
-          } yield accounts.map((poolName, w.getName, _))
+          } yield accounts.map((poolName, w, lastHeight, _))
         }).map(_.flatten)
       } yield accounts
       val resultFuture = accountsFuture.map { accounts =>
         accounts.map {
-          case (poolName, walletName, a) =>
-            val f = a.sync(poolName, walletName)
-            Try(Await.result(f, 30.minute)).recoverWith{ case t =>
-              Failure(AccountSyncException(poolName, walletName, a.getIndex, t))
+          case (poolName, wallet, lastHeight, a) =>
+            info(s"SYNC : Starting for $poolName, ${wallet.getName}, $a")
+            val res = for {
+              syncResult <- a.sync(poolName, wallet.getName)
+              // _ = info(s"SYNC : Sync ended for $poolName, ${wallet.getName}, $a, Success=${syncResult.syncResult}")
+              newOperationStream <- retrieveNewOperations(a, lastHeight)
+              _ <- Future.successful(info(s"SYNC : done with success ${syncResult.syncResult} $poolName, ${wallet.getName}, $a => Found ${newOperationStream.size} new operations from height= $lastHeight"))
+            } yield syncResult
+            Try(Await.result(res, 30.minute)).recoverWith { case t =>
+              Failure(AccountSyncException(poolName, wallet.getName, a.getIndex, t))
             }
         }
       }
@@ -82,6 +91,8 @@ class PoolsService @Inject()(daemonCache: DaemonCache) extends DaemonService {
       resultFuture
     }
   }
+
+  def retrieveNewOperations(account: Account, height: Long): Future[Seq[Operation]] = account.operationsFromHeight(0, 100, 1, height)
 
   // To avoid launching sync at the same time
   private val syncOnGoing = new AtomicBoolean(false)

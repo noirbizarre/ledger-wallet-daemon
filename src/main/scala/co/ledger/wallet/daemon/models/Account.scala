@@ -100,6 +100,12 @@ object Account extends Logging {
     def operations(offset: Int, batch: Int, fullOp: Int)(implicit ec: ExecutionContext): Future[Seq[core.Operation]] =
       Account.operations(offset, batch, fullOp, a.queryOperations())
 
+    def operationsFromHeight(offset: Int, batch: Int, fullOp: Int, fromHeight: Long)(implicit ec: ExecutionContext): Future[Seq[core.Operation]] = {
+      val opQuery: OperationQuery = a.queryOperations()
+      opQuery.filter().opAnd(QueryFilter.blockHeightGt(fromHeight))
+      Account.operations(offset, batch, fullOp, opQuery)
+    }
+
     def freshAddresses(implicit ec: ExecutionContext): Future[Seq[core.Address]] =
       Account.freshAddresses(a)
 

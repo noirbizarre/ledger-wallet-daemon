@@ -1,21 +1,15 @@
 package co.ledger.wallet.daemon.modules
 
-import java.util.concurrent.TimeUnit
-
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.global
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
 import co.ledger.wallet.daemon.database.{DaemonCache, DefaultDaemonCache}
-import co.ledger.wallet.daemon.exceptions.AccountSyncException
-import co.ledger.wallet.daemon.services.{PoolsService, UsersService}
+import co.ledger.wallet.daemon.services.UsersService
 import com.google.inject.Provides
-import com.twitter.concurrent.NamedPoolThreadFactory
 import com.twitter.inject.{Injector, TwitterModule}
-import com.twitter.util.{Duration, ScheduledThreadPoolTimer, Time}
 import javax.inject.Singleton
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success}
 
 object DaemonCacheModule extends TwitterModule {
 
@@ -30,9 +24,9 @@ object DaemonCacheModule extends TwitterModule {
   }
 
   override def singletonPostWarmupComplete(injector: Injector): Unit = {
-    val poolsService = injector.instance[PoolsService](classOf[PoolsService])
+   // val poolsService = injector.instance[PoolsService](classOf[PoolsService])
     info(s"Core operation pool cpu factor is ${DaemonConfiguration.corePoolOpSizeFactor}")
-
+/*
     def synchronizationTask(): Unit = {
       try {
         Await.result(poolsService.syncOperations, 1.hour).foreach{
@@ -52,17 +46,23 @@ object DaemonCacheModule extends TwitterModule {
         case t: Throwable => error("The full synchronization timed out in 30 minutes", t)
       }
     }
-
+*/
     def startSynchronization(): Unit = {
-      val scheduler = new ScheduledThreadPoolTimer(
+      /* val scheduler = new ScheduledThreadPoolTimer(
         poolSize = 1,
         threadFactory = new NamedPoolThreadFactory("scheduler-thread-pool")
       )
-      scheduler.schedule(
+      */
+
+      /* scheduler.schedule(
         Time.fromSeconds(DaemonConfiguration.Synchronization.initialDelay),
-        Duration(DaemonConfiguration.Synchronization.interval, TimeUnit.HOURS))(synchronizationTask())
-      info(s"Scheduled synchronization job: initial start in ${DaemonConfiguration.Synchronization.initialDelay} seconds, " +
-        s"interval ${DaemonConfiguration.Synchronization.interval} hours")
+        Duration(DaemonConfiguration.Synchronization.interval, TimeUnit.HOURS))(synchronizationTask()) */
+      /*  scheduler.schedule(
+         Time.fromSeconds(30),
+         Duration(1, TimeUnit.MINUTES))(synchronizationTask())
+       info(s"Scheduled synchronization job: initial start in ${DaemonConfiguration.Synchronization.initialDelay} seconds, " +
+         s"interval ${DaemonConfiguration.Synchronization.interval} hours")
+      */
     }
 
     val usersService = injector.instance[UsersService](classOf[UsersService])

@@ -128,8 +128,7 @@ class ApiClient(implicit val ec: ExecutionContext) extends Logging {
     }.asScala()
   }
 
-  private val defaultGasLimit =
-    BigInt(200000)
+  private val defaultGasLimit = BigInt(200000)
   private val defaultXRPFeesInfo = RippleFeeInfo(10, 256, 256, 10)
     BigInt(10)
 
