@@ -18,7 +18,7 @@ import co.ledger.wallet.daemon.models.Currency._
 import co.ledger.wallet.daemon.models.coins.Coin.TransactionView
 import co.ledger.wallet.daemon.models.coins.{Bitcoin, UnsignedEthereumTransactionView, UnsignedRippleTransactionView}
 import co.ledger.wallet.daemon.schedulers.observers.{SynchronizationEventReceiver, SynchronizationResult}
-import co.ledger.wallet.daemon.services.LogMsgMaker
+import co.ledger.wallet.daemon.services.{LogMsgMaker, SyncStatus}
 import co.ledger.wallet.daemon.utils.HexUtils
 import co.ledger.wallet.daemon.utils.Utils.RichBigInt
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -79,8 +79,8 @@ object Account extends Logging {
     def operationCounts(implicit ec: ExecutionContext): Future[Map[core.OperationType, Int]] =
       Account.operationCounts(a)
 
-    def accountView(walletName: String, cv: CurrencyView)(implicit ec: ExecutionContext): Future[AccountView] =
-      Account.accountView(walletName, cv, a)
+    def accountView(walletName: String, cv: CurrencyView, syncStatus: SyncStatus)(implicit ec: ExecutionContext): Future[AccountView] =
+      Account.accountView(walletName, cv, a, syncStatus)
 
     def broadcastBTCTransaction(rawTx: Array[Byte], signatures: Seq[BTCSigPub], currentHeight: Long, c: core.Currency): Future[String] =
       Account.broadcastBTCTransaction(rawTx, signatures, currentHeight, a, c)
@@ -205,11 +205,11 @@ object Account extends Logging {
       os.asScala.groupBy(o => o.getOperationType).map { case (optType, opts) => (optType, opts.size) }
     }
 
-  def accountView(walletName: String, cv: CurrencyView, a: core.Account)(implicit ex: ExecutionContext): Future[AccountView] =
+  def accountView(walletName: String, cv: CurrencyView, a: core.Account, syncStatus: SyncStatus)(implicit ex: ExecutionContext): Future[AccountView] =
     for {
       b <- balance(a)
       opsCount <- operationCounts(a)
-    } yield AccountView(walletName, a.getIndex, b, opsCount, a.getRestoreKey, cv)
+    } yield AccountView(walletName, a.getIndex, b, opsCount, a.getRestoreKey, cv, syncStatus)
 
   def broadcastBTCTransaction(rawTx: Array[Byte], signatures: Seq[BTCSigPub], currentHeight: Long, a: core.Account, c: core.Currency): Future[String] = {
     c.parseUnsignedBTCTransaction(rawTx, currentHeight) match {
@@ -500,7 +500,8 @@ case class AccountView(
                         @JsonProperty("balance") balance: scala.BigInt,
                         @JsonProperty("operation_count") operationCounts: Map[core.OperationType, Int],
                         @JsonProperty("keychain") keychain: String,
-                        @JsonProperty("currency") currency: CurrencyView
+                        @JsonProperty("currency") currency: CurrencyView,
+                        @JsonProperty("status") status: SyncStatus
                       )
 
 case class ERC20AccountView(

@@ -8,6 +8,7 @@ import co.ledger.wallet.daemon.exceptions.UnsupportedNativeSegwitException
 import co.ledger.wallet.daemon.models.Account._
 import co.ledger.wallet.daemon.models.Currency.RichCoreCurrency
 import co.ledger.wallet.daemon.models.Wallet.RichCoreWallet
+import co.ledger.wallet.daemon.services.Synced
 import co.ledger.wallet.daemon.utils.NativeLibLoader
 import org.junit.Test
 import org.scalatest.junit.AssertionsForJUnit
@@ -73,7 +74,7 @@ class WalletTest extends AssertionsForJUnit {
     val account = Await.result(testWallet.account(testAccount.getIndex), Duration.Inf)
     assert(account.map(_.getIndex) === accounts.headOption.map(_.getIndex))
     val walletView = Await.result(testWallet.walletView, Duration.Inf)
-    val accountView = Await.result(testAccount.accountView(testWallet.getName, testWallet.getCurrency.currencyView), Duration.Inf)
+    val accountView = Await.result(testAccount.accountView(testWallet.getName, testWallet.getCurrency.currencyView, Synced(0)), Duration.Inf)
     assert(walletView.balance === accountView.index)
     assert(0 === testAccount.getIndex)
     assert(6 === account6.getIndex)

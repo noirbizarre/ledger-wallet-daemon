@@ -3,7 +3,7 @@ package co.ledger.wallet.daemon.modules
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.global
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
 import co.ledger.wallet.daemon.database.{DaemonCache, DefaultDaemonCache}
-import co.ledger.wallet.daemon.services.UsersService
+import co.ledger.wallet.daemon.services.{AccountSynchronizerManager, UsersService}
 import com.google.inject.Provides
 import com.twitter.inject.{Injector, TwitterModule}
 import javax.inject.Singleton
@@ -24,46 +24,7 @@ object DaemonCacheModule extends TwitterModule {
   }
 
   override def singletonPostWarmupComplete(injector: Injector): Unit = {
-   // val poolsService = injector.instance[PoolsService](classOf[PoolsService])
     info(s"Core operation pool cpu factor is ${DaemonConfiguration.corePoolOpSizeFactor}")
-/*
-    def synchronizationTask(): Unit = {
-      try {
-        Await.result(poolsService.syncOperations, 1.hour).foreach{
-          case Success(r) =>
-            if (r.syncResult) {
-              info(s"Synchronization complete for $r")
-            }
-            else {
-              warn(s"Failed synchronizing $r")
-            }
-          case Failure(e: AccountSyncException) =>
-            error(e.getMessage, e)
-          case Failure(t) =>
-            error("Failed to synchronize account due to unknown exception", t)
-        }
-      } catch {
-        case t: Throwable => error("The full synchronization timed out in 30 minutes", t)
-      }
-    }
-*/
-    def startSynchronization(): Unit = {
-      /* val scheduler = new ScheduledThreadPoolTimer(
-        poolSize = 1,
-        threadFactory = new NamedPoolThreadFactory("scheduler-thread-pool")
-      )
-      */
-
-      /* scheduler.schedule(
-        Time.fromSeconds(DaemonConfiguration.Synchronization.initialDelay),
-        Duration(DaemonConfiguration.Synchronization.interval, TimeUnit.HOURS))(synchronizationTask()) */
-      /*  scheduler.schedule(
-         Time.fromSeconds(30),
-         Duration(1, TimeUnit.MINUTES))(synchronizationTask())
-       info(s"Scheduled synchronization job: initial start in ${DaemonConfiguration.Synchronization.initialDelay} seconds, " +
-         s"interval ${DaemonConfiguration.Synchronization.interval} hours")
-      */
-    }
 
     val usersService = injector.instance[UsersService](classOf[UsersService])
     DaemonConfiguration.adminUsers.map { user =>
@@ -78,7 +39,9 @@ object DaemonCacheModule extends TwitterModule {
     if (DaemonConfiguration.updateWalletConfig) {
       Await.result(updateWalletConfig(), 5.minutes)
     }
-    startSynchronization()
+
+    val accountSynchronizerManager = injector.instance[AccountSynchronizerManager](classOf[AccountSynchronizerManager])
+    accountSynchronizerManager.start()
   }
 
   private def updateWalletConfig(): Future[Unit] = {

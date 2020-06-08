@@ -36,7 +36,7 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class AccountsService @Inject()(daemonCache: DaemonCache) extends DaemonService {
+class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: AccountSynchronizerManager) extends DaemonService {
 
   case class CacheKey(a: AccountInfo, contract: Option[String])
 
@@ -54,7 +54,10 @@ class AccountsService @Inject()(daemonCache: DaemonCache) extends DaemonService 
   def accounts(walletInfo: WalletInfo): Future[Seq[AccountView]] = {
     daemonCache.withWallet(walletInfo) { wallet =>
       wallet.accounts.flatMap { as =>
-        as.toList.map(a => a.accountView(walletInfo.walletName, wallet.getCurrency.currencyView)).sequence[Future, AccountView]
+        as.toList.map{a =>
+          val syncStatus = synchronizerManager.getSyncStatus(AccountInfo(a.getIndex, walletInfo)).get
+          a.accountView(walletInfo.walletName, wallet.getCurrency.currencyView, syncStatus)
+        }.sequence[Future, AccountView]
       }
     }
   }
@@ -62,7 +65,10 @@ class AccountsService @Inject()(daemonCache: DaemonCache) extends DaemonService 
   def account(accountInfo: AccountInfo): Future[Option[AccountView]] = {
     daemonCache.withWallet(accountInfo.walletInfo) { wallet =>
       wallet.account(accountInfo.accountIndex).flatMap(ao =>
-        ao.map(_.accountView(accountInfo.walletName, wallet.getCurrency.currencyView)).sequence)
+        ao.map{account =>
+          val syncStatus = synchronizerManager.getSyncStatus(accountInfo).get
+          account.accountView(accountInfo.walletName, wallet.getCurrency.currencyView, syncStatus)
+        }.sequence)
     }
   }
 
@@ -79,6 +85,14 @@ class AccountsService @Inject()(daemonCache: DaemonCache) extends DaemonService 
           case _ => info(s"Account ${accountInfo.poolName} - ${accountInfo.walletName} - ${accountInfo.accountIndex} not found")
         }
     }
+  }
+
+  /**
+   * This method will wipe all the operations in the account, and resynchronize them from the
+   * explorer. During the resynchronization, the account will not be accessible.
+   */
+  def resynchronizeAccount(accountInfo: AccountInfo): Unit = {
+    synchronizerManager.resyncAccount(accountInfo)
   }
 
   /**
@@ -300,12 +314,22 @@ class AccountsService @Inject()(daemonCache: DaemonCache) extends DaemonService 
 
   def createAccount(accountCreationBody: AccountDerivationView, walletInfo: WalletInfo): Future[AccountView] =
     daemonCache.withWallet(walletInfo) {
-      w => w.addAccountIfNotExist(accountCreationBody).flatMap(_.accountView(walletInfo.walletName, w.getCurrency.currencyView))
+      w => w.addAccountIfNotExist(accountCreationBody).flatMap{a =>
+        val accountInfo = AccountInfo(a.getIndex, walletInfo)
+        synchronizerManager.registerAccount(a, accountInfo)
+        val syncStatus = synchronizerManager.getSyncStatus(accountInfo).get
+        a.accountView(walletInfo.walletName, w.getCurrency.currencyView, syncStatus)
+      }
     }
 
   def createAccountWithExtendedInfo(derivations: AccountExtendedDerivationView, walletInfo: WalletInfo): Future[AccountView] =
     daemonCache.withWallet(walletInfo) {
-      w => w.addAccountIfNotExist(derivations).flatMap(_.accountView(walletInfo.walletName, w.getCurrency.currencyView))
+      w => w.addAccountIfNotExist(derivations).flatMap{ a =>
+        val accountInfo = AccountInfo(a.getIndex, walletInfo)
+        synchronizerManager.registerAccount(a, accountInfo)
+        val syncStatus = synchronizerManager.getSyncStatus(accountInfo).get
+        a.accountView(walletInfo.walletName, w.getCurrency.currencyView, syncStatus)
+      }
     }
 
 }
