@@ -145,7 +145,7 @@ class AccountSynchronizer(account: Account, poolName: String, walletName: String
   // This method is called periodically by `periodicSync` task
   private def startPeriodicSync(): Boolean = this.synchronized {
     syncStatus match {
-      case Synced(_) => // do sync
+      case Synced(_) | FailedToSync(_) => // do sync
         syncStatus = Syncing(lastBlockHeightSync)
         syncAccount()
         true
@@ -174,13 +174,13 @@ class AccountSynchronizer(account: Account, poolName: String, walletName: String
     if (resyncLatch.tryAcquire()) {
       info(s"RESYNC : try to resync account $accountInfo")
       syncStatus match {
-        case Synced(_) => // do resync
+        case Synced(_) | FailedToSync(_) => // do resync
           syncStatus = Resyncing(lastBlockHeightSync, 0)
           info(s"RESYNC : resyncing $accountInfo")
           for {
             _ <- account.eraseDataSince(new Date(0))
             _ = info(s"Resync : erased all the operations of $accountInfo")
-            _ <- account.sync(poolName, walletName)
+            _ <- syncAccount()
           } yield ()
         case _ => // queue the resync
           info(s"RESYNC : the account $accountInfo is being syncing, postpone the resync")
