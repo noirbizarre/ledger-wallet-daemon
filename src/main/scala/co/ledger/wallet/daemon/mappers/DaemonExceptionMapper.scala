@@ -110,6 +110,11 @@ class DaemonExceptionMapper @Inject()(response: ResponseBuilder)
         ResponseSerializer.serializeInternalError(request, response, e)
       case e: InvalidUrlException =>
         ResponseSerializer.serializeInternalError(request, response, e)
+      case e@ResyncOnGoingException(targetHeight, currentHeight) =>
+        ResponseSerializer.serializeBadRequest(request,
+          daemonExceptionInfo(e) + ("sync_status_target" -> targetHeight, "sync_status_current" -> currentHeight),
+          response
+        )
     }
   }
 }
