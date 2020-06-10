@@ -71,9 +71,9 @@ class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: A
   }
 
   /**
-   * This method will wipe all the operations in the account, and resynchronize them from the
-   * explorer. During the resynchronization, the account will not be accessible.
-   */
+    * This method will wipe all the operations in the account, and resynchronize them from the
+    * explorer. During the resynchronization, the account will not be accessible.
+    */
   def resynchronizeAccount(accountInfo: AccountInfo): Unit = {
     synchronizerManager.resyncAccount(accountInfo)
   }

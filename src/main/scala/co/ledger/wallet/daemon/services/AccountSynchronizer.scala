@@ -21,9 +21,9 @@ import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorServic
 import scala.util.Success
 
 /**
- * This module is responsible to maintain account updated
- * It's pluggable to external trigger
- */
+  * This module is responsible to maintain account updated
+  * It's pluggable to external trigger
+  */
 @Singleton
 class AccountSynchronizerManager @Inject()(daemonCache: DaemonCache) extends DaemonService {
 
@@ -101,20 +101,20 @@ class AccountSynchronizerManager @Inject()(daemonCache: DaemonCache) extends Dae
 }
 
 /**
- * AccountSynchronizer manages all synchronization task related to the account.
- * An account sync will be triggerred periodically.
- * An account can have following states:
- * Synced(blockHeight)                    external trigger
- * periodic trigger ^                |    ^                      |
- * |                v       \                   v
- * Syncing(fromHeight)       Resyncing(targetHeight, currentHeight)
- *
- * @param account
- * @param poolName
- * @param walletName
- * @param scheduler
- * @param ec the execution context for the synchronization job
- */
+  * AccountSynchronizer manages all synchronization task related to the account.
+  * An account sync will be triggerred periodically.
+  * An account can have following states:
+  * Synced(blockHeight)                    external trigger
+  * periodic trigger ^                |    ^                      |
+  * |                v       \                   v
+  * Syncing(fromHeight)       Resyncing(targetHeight, currentHeight)
+  *
+  * @param account
+  * @param poolName
+  * @param walletName
+  * @param scheduler
+  * @param ec the execution context for the synchronization job
+  */
 class AccountSynchronizer(account: Account, poolName: String, walletName: String, scheduler: Timer)
                          (implicit ec: ExecutionContext) extends Logging {
   private var syncStatus: SyncStatus = Synced(0)
@@ -265,10 +265,10 @@ case class FailedToSync(reason: String) extends SyncStatus {
 }
 
 /**
- * targetHeight is the height of the most recent operation of the account before the resync.
- * currentHeight is the height of the most recent operation of the account during resyncing.
- * they serve as a progress indicator
- */
+  * targetHeight is the height of the most recent operation of the account before the resync.
+  * currentHeight is the height of the most recent operation of the account during resyncing.
+  * they serve as a progress indicator
+  */
 case class Resyncing(
                       @JsonProperty("sync_status_target") targetHeight: Long,
                       @JsonProperty("sync_status_current") currentHeight: Long
