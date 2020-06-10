@@ -167,7 +167,8 @@ class AccountSynchronizer(account: Account, poolName: String, walletName: String
   def startPeriodicSync(): Boolean = this.synchronized {
     syncStatus match {
       case Synced(_) | FailedToSync(_) => // do sync
-        syncStatus = Syncing(lastBlockHeightSync)
+        val lastHeight = lastBlockHeightSync
+        syncStatus = Syncing(lastHeight, lastHeight)
         syncAccount()
         true
       case _ => // do nothing
@@ -181,12 +182,18 @@ class AccountSynchronizer(account: Account, poolName: String, walletName: String
       case Resyncing(target, _) =>
         val lastHeight = lastBlockHeightSync
         syncStatus = Resyncing(target, lastHeight)
+      case Syncing(fromHeight, _) =>
+        val lastHeight = lastBlockHeightSync
+        syncStatus = Syncing(fromHeight, lastHeight)
       case _ =>
     }
   }
 
   private def lastBlockHeightSync: Long = {
-    val f = account.getLastBlock().map(_.getHeight)
+    val f: Future[Long] = account.firstOperation.map{ o =>
+      val optionLong: Option[Long] = o.map(_.getBlockHeight) // walk around for java type conversion
+      optionLong.getOrElse(0L)
+    }
     Await.result(f, 3.seconds)
   }
 
@@ -214,11 +221,10 @@ class AccountSynchronizer(account: Account, poolName: String, walletName: String
     onSynchronizationStart()
     for {
       syncResult <- account.sync(poolName, walletName)
-      lastBlock <- account.getLastBlock()
     } yield {
       this.synchronized {
         if (syncResult.syncResult) {
-          syncStatus = Synced(lastBlock.getHeight)
+          syncStatus = Synced(lastBlockHeightSync)
         } else {
           syncStatus = FailedToSync(s"SYNC : failed to sync account $accountInfo")
         }
@@ -247,7 +253,7 @@ case class Synced(atHeight: Long) extends SyncStatus {
   def value: String = "synced"
 }
 
-case class Syncing(fromHeight: Long) extends SyncStatus {
+case class Syncing(fromHeight: Long, currentHeight: Long) extends SyncStatus {
   @JsonProperty("value")
   def value: String = "syncing"
 }
