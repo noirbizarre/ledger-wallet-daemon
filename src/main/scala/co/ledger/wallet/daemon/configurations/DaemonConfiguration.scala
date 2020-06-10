@@ -17,8 +17,10 @@ object DaemonConfiguration extends Logging {
   private val config = ConfigFactory.load()
   private val PERMISSION_CREATE_USER: Int = 0x01
   private val DEFAULT_AUTH_TOKEN_DURATION: Int = 3600 * 1000 // 30 seconds
-  private val DEFAULT_SYNC_INTERVAL: Int = 24 // 24 hours
-  private val DEFAULT_SYNC_INITIAL_DELAY: Int = 300 // 5 minutes
+  private val DEFAULT_SYNC_INTERVAL: Int = 60 // 60 seconds
+  private val DEFAULT_RESYNC_CHECK_INTERVAL: Int = 3 // 5 seconds
+  private val DEFAULT_SYNC_STATUS_CHECK_INTERVAL: Int = 3 // 3 seconds
+  private val DEFAULT_SYNC_ACCOUNT_REGISTER_INTERVAL: Int = 600 // 10 mins
   // Default value for keeping alive connections inside the client connection pool
   private val DEFAULT_CLIENT_CONNECTION_TTL: Int = 120 // 120 seconds
   // Retry policy inside a connection pool
@@ -104,17 +106,29 @@ object DaemonConfiguration extends Logging {
   val updateWalletConfig: Boolean = if (config.hasPath("update_wallet_config")) config.getBoolean("update_wallet_config") else false
 
   object Synchronization {
-    val initialDelay = if (config.hasPath("synchronization.initial_delay_in_seconds")) {
-      config.getInt("synchronization.initial_delay_in_seconds")
-    }
-    else {
-      DEFAULT_SYNC_INITIAL_DELAY
-    }
-    val interval = if (config.hasPath("synchronization.interval_in_hours")) {
-      config.getInt("synchronization.interval_in_hours")
+    val syncInterval = if (config.hasPath("synchronization.sync_interval_in_seconds")) {
+      config.getInt("synchronization.sync_interval_in_seconds")
     }
     else {
       DEFAULT_SYNC_INTERVAL
+    }
+    val syncAccountRegisterInterval = if (config.hasPath("synchronization.sync_account_register_interval_in_seconds")) {
+      config.getInt("synchronization.sync_account_register_interval_in_seconds")
+    }
+    else {
+      DEFAULT_SYNC_ACCOUNT_REGISTER_INTERVAL
+    }
+    val syncStatusCheckInterval = if (config.hasPath("synchronization.sync_status_check_interval_in_seconds")) {
+      config.getInt("synchronization.sync_status_check_interval_in_seconds")
+    }
+    else {
+      DEFAULT_SYNC_STATUS_CHECK_INTERVAL
+    }
+    val resyncCheckInterval = if (config.hasPath("synchronization.resync_check_interval_in_seconds")) {
+      config.getInt("synchronization.resync_check_interval_in_seconds")
+    }
+    else {
+      DEFAULT_RESYNC_CHECK_INTERVAL
     }
   }
 
