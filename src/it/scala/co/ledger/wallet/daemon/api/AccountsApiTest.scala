@@ -1,14 +1,17 @@
 package co.ledger.wallet.daemon.api
 
+import java.io.IOException
 import java.util.UUID
 
 import co.ledger.core.TimePeriod
 import co.ledger.wallet.daemon.controllers.AccountsController.{HistoryResponse, TokenHistoryResponse, UtxoAccountResponse}
 import co.ledger.wallet.daemon.models.Operations.PackedOperationsView
 import co.ledger.wallet.daemon.models.{AccountDerivationView, AccountView, ERC20AccountView, FreshAddressView}
-import co.ledger.wallet.daemon.services.OperationQueryParams
+import co.ledger.wallet.daemon.services._
 import co.ledger.wallet.daemon.utils.APIFeatureTest
-import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.{DeserializationContext, JsonDeserializer, JsonNode}
 import com.twitter.finagle.http.{Response, Status}
 
 class AccountsApiTest extends APIFeatureTest {
@@ -184,7 +187,9 @@ class AccountsApiTest extends APIFeatureTest {
     getPool(poolName, Status.NotFound)
   }
 
-  test("AccountsApi#Create account and delete specific account") {
+
+  // To be removed as wipe data is not proposed anymore, resync feature is proposed instead
+  ignore("AccountsApi#Create account and wipe specific account") {
     val poolName = "delete_account"
     val wallet1 = "test_deleteAcc_wal1"
     val wallet2 = "test_deleteAcc_wal2"
@@ -209,17 +214,17 @@ class AccountsApiTest extends APIFeatureTest {
 
     // Get then Delete and check operation count for the 3 accounts
     assert(transactionCountOf(poolName, wallet2, 0) > 0)
-    deleteAccount(poolName, wallet2, 0, Status.Ok)
+    clearAccount(poolName, wallet2, 0, Status.Ok)
     assert(transactionCountOf(poolName, wallet2, 0) == 0)
     assert(transactionCountOf(poolName, wallet3, 0) > 0)
     assert(transactionCountOf(poolName, wallet3, 1) > 0)
 
-    deleteAccount(poolName, wallet3, 1, Status.Ok)
+    clearAccount(poolName, wallet3, 1, Status.Ok)
     assert(transactionCountOf(poolName, wallet2, 0) == 0)
     assert(transactionCountOf(poolName, wallet3, 0) > 0)
     assert(transactionCountOf(poolName, wallet3, 1) == 0)
 
-    deleteAccount(poolName, wallet3, 0, Status.Ok)
+    clearAccount(poolName, wallet3, 0, Status.Ok)
     assert(transactionCountOf(poolName, wallet2, 0) == 0)
     assert(transactionCountOf(poolName, wallet3, 0) == 0)
     assert(transactionCountOf(poolName, wallet3, 1) == 0)
@@ -410,6 +415,23 @@ class AccountsApiTest extends APIFeatureTest {
     assert(histoResponse.balances.size == 3)
     assert(histoResponse.balances.head == BigInt("100000000000000000000"))
     deletePool(poolName)
+  }
+
+
+  val module: SimpleModule = new SimpleModule
+  module.addDeserializer(classOf[SyncStatus], new AccountStatusDeserializer)
+  server.mapper.registerModule(module)
+
+  class AccountStatusDeserializer extends JsonDeserializer[SyncStatus] {
+    override def deserialize(jp: JsonParser, ctxt: DeserializationContext): SyncStatus = {
+      val jTree: JsonNode = jp.getCodec.readTree[JsonNode](jp)
+      jTree.get("value").asText match {
+        case "synced" => Synced(atHeight = jTree.get("at_height").asLong)
+        case "syncing" => Syncing(fromHeight = jTree.get("from_height").asLong, currentHeight = jTree.get("current_height").asLong)
+        case "failed" => FailedToSync(reason = jTree.get("reason").asText)
+        case _ => throw new IOException(s"Failed to deserialize $jTree")
+      }
+    }
   }
 
   private val CORRECT_BODY_BITCOIN =

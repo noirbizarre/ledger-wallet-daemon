@@ -247,7 +247,9 @@ class AccountSynchronizer(account: Account, poolName: String, walletName: String
   }
 }
 
-sealed trait SyncStatus
+sealed trait SyncStatus{
+  def value: String
+}
 
 case class Synced(atHeight: Long) extends SyncStatus {
   @JsonProperty("value")
@@ -264,7 +266,7 @@ case class FailedToSync(reason: String) extends SyncStatus {
   def value: String = "failed"
 }
 
-/**
+/*
   * targetHeight is the height of the most recent operation of the account before the resync.
   * currentHeight is the height of the most recent operation of the account during resyncing.
   * they serve as a progress indicator
