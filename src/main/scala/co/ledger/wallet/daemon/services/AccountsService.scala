@@ -324,7 +324,7 @@ class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: A
     daemonCache.withWallet(walletInfo) {
       w => w.addAccountIfNotExist(accountCreationBody).flatMap{a =>
         val accountInfo = AccountInfo(a.getIndex, walletInfo)
-        synchronizerManager.registerAccount(a, accountInfo)
+        synchronizerManager.registerAccount(a, w, accountInfo)
         val syncStatus = synchronizerManager.getSyncStatus(accountInfo).get
         a.accountView(walletInfo.walletName, w.getCurrency.currencyView, syncStatus)
       }
@@ -334,7 +334,7 @@ class AccountsService @Inject()(daemonCache: DaemonCache, synchronizerManager: A
     daemonCache.withWallet(walletInfo) {
       w => w.addAccountIfNotExist(derivations).flatMap{ a =>
         val accountInfo = AccountInfo(a.getIndex, walletInfo)
-        synchronizerManager.registerAccount(a, accountInfo)
+        synchronizerManager.registerAccount(a, w, accountInfo)
         val syncStatus = synchronizerManager.getSyncStatus(accountInfo).get
         a.accountView(walletInfo.walletName, w.getCurrency.currencyView, syncStatus)
       }

@@ -105,6 +105,7 @@ lazy val versions = new {
   val websocket  = "1.1"
   val web3j      = "4.5.1"
   val guava      = "28.1-jre"
+  val rabbitmq   = "5.9.0"
 }
 // scalastyle:on
 
@@ -133,6 +134,7 @@ lazy val root = (project in file("."))
       "io.circe"                     %% "circe-core"             % versions.circe,
       "io.circe"                     %% "circe-generic"          % versions.circe,
       "io.circe"                     %% "circe-parser"           % versions.circe,
+      "com.rabbitmq"                 %  "amqp-client"            % versions.rabbitmq,
 
       // Tests dependencies
       "org.specs2"                   %% "specs2-mock"            % versions.specs2     % "it",

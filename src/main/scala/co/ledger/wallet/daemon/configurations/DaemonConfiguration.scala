@@ -262,6 +262,8 @@ object DaemonConfiguration extends Logging {
     }
   }
 
+  val rabbitMQUri: String = config.getString("rabbitmq.uri")
+
   case class ApiConfig(fallbackTimeout: Int, paths: Map[String, PathConfig], proxyUse: Map[Host, Boolean], fees: Map[String, FeesPath])
 
   case class PathConfig(host: String, port: Int, disableSyncToken: Boolean, fallback: Option[String], explorerVersion: Option[String])
