@@ -60,6 +60,7 @@ jobs:
           POSTGRES_USER: ledger
           POSTGRES_PASSWORD: ledger_secret
         command: -c "ssl=on" -c "ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key" -c "ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem"
+      - image: rabbitmq:3
     steps:
       - checkout
       - restore_cache: *dependencies_cache
@@ -69,7 +70,9 @@ jobs:
       - run:
           name: Waiting for Postgres to be ready
           command: tooling/network/waitForService.sh 0.0.0.0 5432
-
+      - run:
+          name: Waiting for RabbitMQ to be ready
+          command: tooling/network/waitForService.sh 0.0.0.0 5672
       - run:
           name: Create databases for test
           command: tooling/database/postgres/dbs.sh 0.0.0.0 5432 ledger ledger_secret wdtest_
@@ -89,6 +92,7 @@ jobs:
             CORE_PG_PWD: ledger_secret
             CORE_PG_DB_NAME_PREFIX: wdtest_
             CORE_PG_CONNECTION_POOL_SIZE_PER_WALLET_POOL: 2
+            RABBITMQ_URI: "amqp://guest:guest@0.0.0.0:5672"
             SBT_OPTS: -Xmx3200m -XX:MaxMetaspaceSize=1024M
       - codecov/upload:
           file: target/scala-2.12/coverage-report/cobertura.xml

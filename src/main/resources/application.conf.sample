@@ -59,9 +59,20 @@ authentication = {
 
 realtimeobservation = true
 
+# Configuration for Account Synchronizer Manager (ASM)
 synchronization = {
-  initial_delay_in_seconds = 120
-  interval_in_hours = 1
+  initial_delay_in_seconds = 120   # Not used
+  interval_in_hours = 1            # Not used
+
+  # check every n seconds to register new account to ASM. default 600
+  sync_account_register_interval_in_seconds = ${?SYNC_ACCOUNT_REGISTER_INTERVAL_IN_SECONDS}
+
+  # check every n seconds to update sync status. default 3
+  sync_status_check_interval_in_seconds = ${?SYNC_STATUS_CHECK_INTERVAL_IN_SECONDS}
+
+  # resync request are queued. check the queue every n seconds to launch
+  # account resync. default 3
+  resync_check_interval_in_seconds = ${?RESYNC_CHECK_INTERVAL_IN_SECONDS}
 }
 
 demo_users = [
@@ -330,3 +341,6 @@ ethereum = {
 }
 
 native_segwit_currencies = ["bitcoin", "bitcoin_testnet", "litecoin", "qtum"]
+
+# rabbitMQ uri in the format of 'amqp://user:pass@host:port'
+rabbitmq.uri = ${RABBITMQ_URI}
