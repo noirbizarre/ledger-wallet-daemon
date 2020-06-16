@@ -61,7 +61,7 @@ trait APIFeatureTest extends FeatureTest {
     server.httpDelete(s"/pools/$poolName", "", headers = defaultHeaders)
   }
 
-  def assertSyncPool(expected: Status): Response = {
+  def assertSyncPools(expected: Status): Response = {
     server.httpPost("/pools/operations/synchronize", "", headers = defaultHeaders, andExpect = expected)
   }
 

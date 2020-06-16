@@ -271,7 +271,7 @@ class AccountsApiTest extends APIFeatureTest {
     createPool("op_pool")
     assertWalletCreation("op_pool", "op_wallet", "bitcoin", Status.Ok)
     assertCreateAccount(CORRECT_BODY_BITCOIN, "op_pool", "op_wallet", Status.Ok)
-    assertSyncPool(Status.Ok)
+    assertSyncPools(Status.Ok)
     assertGetAccountOp("op_pool", "op_wallet", 0, "noexistop", 0, Status.NotFound)
     assertGetAccountOp("op_pool", "op_wallet", 0, "bcbe563a94e70a6fe0a190d6578f5440615eb64bbd6c49b2a6b77eb9ba01963a", 0, Status.Ok)
     val response = assertGetFirstOperation(0, "op_pool", "op_wallet", Status.Ok).contentString

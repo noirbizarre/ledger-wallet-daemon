@@ -73,6 +73,10 @@ class AccountSynchronizerManager @Inject()(daemonCache: DaemonCache) extends Dae
       } yield syncResults
     ), 1.minute))
 
+  def syncAllRegisteredAccounts(): Future[Seq[SynchronizationResult]] =
+    Future.sequence(registeredAccounts.asScala.map {
+      case (_, accountSynchronizer) => accountSynchronizer.eventuallyStartSync()
+    }.toSeq)
 
   def registerAccount(account: Account, accountInfo: AccountInfo): Unit = {
     registeredAccounts.computeIfAbsent(accountInfo, (i: AccountInfo) => {
