@@ -11,7 +11,7 @@ import co.ledger.wallet.daemon.database.DaemonCache
 import co.ledger.wallet.daemon.exceptions.AccountNotFoundException
 import co.ledger.wallet.daemon.models.Account._
 import co.ledger.wallet.daemon.models.Wallet._
-import co.ledger.wallet.daemon.models.{AccountInfo, PoolInfo}
+import co.ledger.wallet.daemon.models.{AccountInfo, Pool, PoolInfo}
 import co.ledger.wallet.daemon.schedulers.observers.SynchronizationResult
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.twitter.concurrent.NamedPoolThreadFactory
@@ -78,18 +78,40 @@ class AccountSynchronizerManager @Inject()(daemonCache: DaemonCache) extends Dae
       case (_, accountSynchronizer) => accountSynchronizer.eventuallyStartSync()
     }.toSeq)
 
-  def registerAccount(account: Account, accountInfo: AccountInfo): Unit = {
+  def registerAccount(account: Account, accountInfo: AccountInfo): Unit = this.synchronized {
     registeredAccounts.computeIfAbsent(accountInfo, (i: AccountInfo) => {
       info(s"registered account $i to account synchronizer manager")
       new AccountSynchronizer(account, poolName = i.poolName, walletName = i.walletName, scheduler)
     })
   }
 
-  def unregisterAccount(accountInfo: AccountInfo): Unit = {
-    registeredAccounts.computeIfPresent(accountInfo, (_: AccountInfo, as: AccountSynchronizer) => {
-      as.close(Duration.fromMinutes(3))
-      null
+  def unregisterAccount(accountInfo: AccountInfo): Future[Unit] = this.synchronized {
+    registeredAccounts.asScala.remove(accountInfo).fold(
+      Future.failed[Unit](AccountNotFoundException(accountInfo.accountIndex))
+    )(as => {
+      as.close(Duration.fromMinutes(3)).map(_ => info(s"AccountSynchronizer for account $accountInfo Closed"))
     })
+  }
+
+  def unregisterPool(pool: Pool, poolInfo: PoolInfo): Future[Unit] = {
+    info(s"Unregister Pool $poolInfo")
+    for {
+      wallets <- pool.wallets
+      walletsAccount <- Future.sequence(wallets.map(wallet => for {
+        accounts <- wallet.accounts
+      } yield (wallet, accounts)))
+    } yield {
+      walletsAccount.map { case (wallet, accounts) =>
+        accounts.map(account => {
+          val accountInfo = AccountInfo(
+            pubKey = poolInfo.pubKey,
+            walletName = wallet.getName,
+            poolName = pool.name,
+            accountIndex = account.getIndex)
+          unregisterAccount(accountInfo)
+        })
+      }
+    }
   }
 
   // return None if account info not found

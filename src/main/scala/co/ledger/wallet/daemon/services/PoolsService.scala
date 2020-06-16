@@ -3,6 +3,7 @@ package co.ledger.wallet.daemon.services
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.global
 import co.ledger.wallet.daemon.database.DaemonCache
 import co.ledger.wallet.daemon.database.DefaultDaemonCache.User
+import co.ledger.wallet.daemon.exceptions.WalletPoolNotFoundException
 import co.ledger.wallet.daemon.models.{PoolInfo, WalletPoolView}
 import co.ledger.wallet.daemon.schedulers.observers.SynchronizationResult
 import javax.inject.{Inject, Singleton}
@@ -30,7 +31,11 @@ class PoolsService @Inject()(daemonCache: DaemonCache, accountSynchronizer: Acco
   }
 
   def removePool(poolInfo: PoolInfo): Future[Unit] = {
-    daemonCache.deleteWalletPool(poolInfo)
+    daemonCache.getWalletPool(poolInfo).map(pool => pool.fold(
+      Future.failed[Unit](WalletPoolNotFoundException(poolInfo.poolName))
+    )(p => accountSynchronizer.unregisterPool(p, poolInfo)
+    )).map(_ => daemonCache.deleteWalletPool(poolInfo))
+      .map(_ => info(s"Pool $poolInfo has been deleted"))
   }
 
   def syncOperations: Future[Seq[SynchronizationResult]] = accountSynchronizer.syncAllRegisteredAccounts()
