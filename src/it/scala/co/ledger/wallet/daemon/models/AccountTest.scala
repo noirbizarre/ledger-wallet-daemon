@@ -10,12 +10,14 @@ import co.ledger.wallet.daemon.models.Account._
 import co.ledger.wallet.daemon.models.Wallet._
 import co.ledger.wallet.daemon.schedulers.observers.SynchronizationResult
 import co.ledger.wallet.daemon.utils.NativeLibLoader
+import org.junit.Test
 // import org.junit.Test
 import org.scalatest.junit.AssertionsForJUnit
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
+@Test
 class AccountTest extends AssertionsForJUnit {
   NativeLibLoader.loadLibs()
 
@@ -61,7 +63,7 @@ class AccountTest extends AssertionsForJUnit {
           DerivationView(d._1.path, d._1.owner, Option(PUBKEYS(d._2)), Option(CHAINCODES(d._2)))
         }
       )
-    }.flatMap { info => testWallet.addAccountIfNotExist(info) } , Duration.Inf)
+    }.flatMap { info => testWallet.addAccountIfNotExist(info) }, Duration.Inf)
 
   private val freshAddresses: Seq[Address] = Await.result(account2.freshAddresses, Duration.Inf)
 

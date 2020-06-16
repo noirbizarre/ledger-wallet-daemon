@@ -6,6 +6,7 @@ import co.ledger.wallet.daemon.database.{DaemonCache, DefaultDaemonCache}
 import co.ledger.wallet.daemon.services.{AccountSynchronizerManager, UsersService}
 import com.google.inject.Provides
 import com.twitter.inject.{Injector, TwitterModule}
+import com.twitter.util.Duration
 import javax.inject.Singleton
 
 import scala.concurrent.duration._
@@ -42,6 +43,11 @@ object DaemonCacheModule extends TwitterModule {
 
     val accountSynchronizerManager = injector.instance[AccountSynchronizerManager](classOf[AccountSynchronizerManager])
     accountSynchronizerManager.start()
+  }
+
+  override def singletonShutdown(injector: Injector): Unit = {
+    info("Shutdown Hook...")
+    injector.instance[AccountSynchronizerManager](classOf[AccountSynchronizerManager]).close(Duration.fromMinutes(3))
   }
 
   private def updateWalletConfig(): Future[Unit] = {

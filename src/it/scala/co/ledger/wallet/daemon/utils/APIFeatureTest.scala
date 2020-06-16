@@ -11,7 +11,8 @@ import com.twitter.inject.server.FeatureTest
 import org.bitcoinj.core.Sha256Hash
 
 trait APIFeatureTest extends FeatureTest {
-  override val server = new EmbeddedHttpServer(new ServerImpl)
+  val serverImpl = new ServerImpl
+  override val server = new EmbeddedHttpServer(serverImpl)
 
   def defaultHeaders: Map[String, String] = lwdBasicAuthorisationHeader("whitelisted")
 
@@ -166,5 +167,10 @@ trait APIFeatureTest extends FeatureTest {
     Map(
       "authorization" -> s"LWD ${Base64.encode(s"${HexUtils.valueOf(pubKey)}:$timestamp:${HexUtils.valueOf(signed)}".getBytes).mkString}"
     )
+  }
+
+  override def afterAll() : scala.Unit = {
+    super.afterAll()
+    server.close()
   }
 }
