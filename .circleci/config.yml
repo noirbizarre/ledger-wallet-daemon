@@ -117,12 +117,12 @@ workflows:
                 name: Set version environment variable
                 command: echo "export COMMIT_HASH=$(git rev-parse HEAD)" >> $BASH_ENV
           filters: *filter_all_tags
-      - docker/test_image:
+      - docker/test_image :
           requires:
             - docker/build_image
           docker_compose_configuration: test_image_env.yml
           dgoss_docker_env_vars: |-
-            RABBITMQ_URI = "amqp://guest:guest@rabbitmq:5672"
+            RABBITMQ_URI="amqp://guest:guest@rabbitmq:5672"
           filters: *filter_all_tags
       - docker/publish_image:
           requires:
