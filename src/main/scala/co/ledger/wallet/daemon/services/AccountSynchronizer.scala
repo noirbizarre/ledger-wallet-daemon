@@ -4,6 +4,7 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ConcurrentHashMap, Executors, Semaphore}
 
+import cats.implicits._
 import co.ledger.core._
 import co.ledger.core.implicits._
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
@@ -66,16 +67,16 @@ class AccountSynchronizerManager @Inject()(daemonCache: DaemonCache, rabbitMQ: R
   }
 
   def syncPool(poolInfo: PoolInfo): Future[Seq[SynchronizationResult]] =
-    Future.sequence(Await.result(daemonCache.withWalletPool(poolInfo)(pool =>
+    daemonCache.withWalletPool(poolInfo)(pool =>
       for {
-        wallets <- pool.wallets.map(_.map(w => (pool, w)))
-        syncResults <- Future.sequence(wallets.map { case (pool, wallet) =>
-          for {
-            accounts <- wallet.accounts
-          } yield accounts.map(account => syncAccount(AccountInfo(account.getIndex, wallet.getName, pool.name, poolInfo.pubKey)))
-        }).map(_.flatten)
-      } yield syncResults
-    ), 1.minute))
+        wallets <- pool.wallets
+        syncResults <- wallets.toList.traverse { wallet =>
+            wallet.accounts.flatMap(_.toList.traverse(account =>
+              syncAccount(AccountInfo(account.getIndex, wallet.getName, pool.name, poolInfo.pubKey)))
+            )
+        }
+      } yield syncResults.flatten
+    )
 
   def syncAllRegisteredAccounts(): Future[Seq[SynchronizationResult]] =
     Future.sequence(registeredAccounts.asScala.map {

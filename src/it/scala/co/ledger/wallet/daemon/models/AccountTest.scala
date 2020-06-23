@@ -67,6 +67,10 @@ class AccountTest extends AssertionsForJUnit {
 
   private val freshAddresses: Seq[Address] = Await.result(account2.freshAddresses, Duration.Inf)
 
+  // Dummy test to avoid no runnable method of JUnit
+  @Test
+  def verifyInitialization(): Unit = Unit
+
   // FIXME: Broken test
   // @Test
   def verifyAccountCreation(): Unit = {
