@@ -28,7 +28,7 @@ class AccountTest extends AssertionsForJUnit {
     "88c2281acd51737c912af74cc1d1a8ba564eb7925e0d58a5500b004ba76099cb",
     "d1bb833ecd3beed6ec5f6aa79d3a424d53f5b99147b21dbc00456b05bc978a71")
 
-  private val testPool = Pool.newInstance(Await.result(Pool.newCoreInstance(PoolDto(UUID.randomUUID().toString, 2L, "", Option(0L))), Duration.Inf), 1L)
+  private val testPool = Pool.newInstance(Await.result(Pool.newCoreInstance(PoolDto("account_test", 2L, "", Option(0L))), Duration.Inf), 1L)
 
   private val testWallet = Await.result(testPool.addWalletIfNotExist("test_wallet", "bitcoin", isNativeSegwit = false), Duration.Inf)
 
