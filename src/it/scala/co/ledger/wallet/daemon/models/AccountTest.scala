@@ -1,7 +1,5 @@
 package co.ledger.wallet.daemon.models
 
-import java.util.UUID
-
 import co.ledger.core
 import co.ledger.core.Address
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext.Implicits.global
