@@ -231,15 +231,19 @@ class AccountSynchronizer(account: Account,
   private def getTransactionRoutingKeys(op: Operation): List[String] = {
     List(
       "transactions",
-      op.getOperationType.toString.toLowerCase,
-      currencyName
+      poolName,
+      currencyName,
+      account.getIndex.toString,
+      op.getOperationType.toString.toLowerCase
     )
   }
 
   private def getAccountRoutingKeys: List[String] = {
     List(
       "accounts",
-      currencyName
+      poolName,
+      currencyName,
+      account.getIndex.toString
     )
   }
 
