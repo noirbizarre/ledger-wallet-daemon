@@ -346,16 +346,20 @@ class AccountSynchronizer(account: Account,
     }
   }
 
-  private def syncAccount(): Future[SynchronizationResult] = this.synchronized {
+  private def syncAccount(): Future[SynchronizationResult] = {
     onSynchronizationStart()
     account.sync(poolName, walletName)
       .andThen {
         case Success(value) if value.syncResult =>
-          syncStatus = Synced(lastBlockHeightSync)
-          onSynchronizationEnds()
+          this.synchronized {
+            syncStatus = Synced(lastBlockHeightSync)
+            onSynchronizationEnds()
+          }
         case _ =>
-          syncStatus = FailedToSync(s"SYNC : failed to sync account $accountInfo")
-          onSynchronizationEnds()
+          this.synchronized {
+            syncStatus = FailedToSync(s"SYNC : failed to sync account $accountInfo")
+            onSynchronizationEnds()
+          }
       }
   }
 
