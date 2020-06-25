@@ -201,7 +201,7 @@ class AccountSynchronizer(account: Account,
       event.getCode match {
         case EventCode.NEW_OPERATION =>
           val uid = event.getPayload.getString(OP_ID_EVENT_KEY)
-          account.operation(uid, 0).foreach {
+          account.operation(uid, 1).foreach {
             case Some(op) =>
               operationPayload(op).foreach(payload =>
                 rabbitmq.publish(poolName, getTransactionRoutingKeys(op), payload)
