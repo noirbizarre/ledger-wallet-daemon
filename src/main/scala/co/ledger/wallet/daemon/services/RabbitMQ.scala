@@ -22,7 +22,7 @@ class RabbitMQ() extends Logging {
   // Channel is not recommended to be used concurrently, hence synchronized
   def publish(exchangeName: String, routingKeys: List[String], payload: Array[Byte]): Unit = synchronized {
     if (!declaredExchanges.contains(exchangeName)) {
-      chan.exchangeDeclare(exchangeName, BuiltinExchangeType.TOPIC)
+      chan.exchangeDeclare(exchangeName, BuiltinExchangeType.TOPIC, true)
       declaredExchanges += exchangeName
     }
     chan.basicPublish(exchangeName, routingKeys.mkString("."), null, payload)
