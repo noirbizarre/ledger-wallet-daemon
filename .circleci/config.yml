@@ -82,6 +82,7 @@ jobs:
             WALLET_PROXY_ENABLED: 'true'
             WALLET_PROXY_HOST: 0.0.0.0
             WALLET_PROXY_PORT: 3128
+            DATABASE_ENGINE: postgres
             CORE_DATABASE_ENGINE: postgres
             CORE_PG_HOST: 0.0.0.0
             CORE_PG_PORT: 5432
