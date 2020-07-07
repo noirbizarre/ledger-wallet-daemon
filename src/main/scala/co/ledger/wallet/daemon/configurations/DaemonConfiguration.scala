@@ -16,7 +16,6 @@ import scala.util.Try
 object DaemonConfiguration extends Logging {
   private val config = ConfigFactory.load()
   private val PERMISSION_CREATE_USER: Int = 0x01
-  private val DEFAULT_AUTH_TOKEN_DURATION: Int = 3600 * 1000 // 30 seconds
   private val DEFAULT_SYNC_INTERVAL: Int = 24 // 24 hours
   private val DEFAULT_SYNC_INITIAL_DELAY: Int = 300 // 5 minutes
   // Default value for keeping alive connections inside the client connection pool
