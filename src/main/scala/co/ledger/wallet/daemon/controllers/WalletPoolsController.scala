@@ -6,7 +6,7 @@ import co.ledger.wallet.daemon.controllers.responses.ResponseSerializer
 import co.ledger.wallet.daemon.exceptions.AccountSyncException
 import co.ledger.wallet.daemon.filters.DeprecatedRouteFilter
 import co.ledger.wallet.daemon.schedulers.observers.SynchronizationResult
-import co.ledger.wallet.daemon.services.AuthenticationService.AuthentifiedUserContext._
+import co.ledger.wallet.daemon.filters.AuthentifiedUserContext._
 import co.ledger.wallet.daemon.services.PoolsService
 import co.ledger.wallet.daemon.services.PoolsService.PoolConfiguration
 import com.fasterxml.jackson.annotation.JsonProperty

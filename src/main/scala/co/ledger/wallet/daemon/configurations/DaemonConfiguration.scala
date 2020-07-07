@@ -99,7 +99,6 @@ object DaemonConfiguration extends Logging {
   }
 
   val isWhiteListDisabled: Boolean = if (!config.hasPath("disable_whitelist")) false else config.getBoolean("disable_whitelist")
-  val isAuthenticationDisabled: Boolean = Try(config.getBoolean("authentication.disable")).getOrElse(false)
 
   val updateWalletConfig: Boolean = if (config.hasPath("update_wallet_config")) config.getBoolean("update_wallet_config") else false
 

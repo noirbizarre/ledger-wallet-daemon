@@ -2,7 +2,7 @@ package co.ledger.wallet.daemon.controllers.requests
 
 import co.ledger.wallet.daemon.database.DefaultDaemonCache.User
 import co.ledger.wallet.daemon.models.{AccountInfo, PoolInfo, TokenAccountInfo, WalletInfo}
-import co.ledger.wallet.daemon.services.AuthenticationService.AuthentifiedUserContext._
+import co.ledger.wallet.daemon.filters.AuthentifiedUserContext._
 import com.twitter.finagle.http.Request
 
 trait RequestWithUser {
