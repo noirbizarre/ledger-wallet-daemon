@@ -78,14 +78,6 @@ object DaemonConfiguration extends Logging {
     List[(String, Int)]()
   }
 
-  val authTokenDuration: Int =
-    if (config.hasPath("authentication.token_duration")) {
-      config.getInt("authentication.token_duration_in_seconds") * 1000
-    }
-    else {
-      DEFAULT_AUTH_TOKEN_DURATION
-    }
-
   val dbProfileName: String = Try(config.getString("database_engine")).toOption.getOrElse("sqlite3")
 
   val dbProfile: JdbcProfile = dbProfileName match {
